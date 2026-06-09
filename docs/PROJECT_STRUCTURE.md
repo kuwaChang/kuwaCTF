@@ -9,8 +9,7 @@ Node.js / Express でよく使われるディレクトリ名に整理した構�
 | `src/` | アプリケーション本体（サーバー・ルート・サービス） |
 | `src/config/paths.js` | プロジェクト内のパス定数（変更時はここを更新） |
 | `config/` | JSON 設定（クイズ・実績・シナリオ） |
-| `content/knowledge/` | AIチューター用ナレッジ（Markdown） |
-| `content/drafts/` | ナレッジ草案・メモ |
+| `content/knowledge/` | AIチューター用ナレッジ（Markdown・草案含む統合済み） |
 | `storage/` | SQLite・セッション・Chroma・Q&Aキュー |
 | `views/pages/` | 公開HTML（URLは従来どおり `/html/...`） |
 | `views/admin/` | 管理者画面 |
@@ -32,7 +31,7 @@ Node.js / Express でよく使われるディレクトリ名に整理した構�
 | `db/` | `storage/` |
 | `data/*.json` | `config/` |
 | `data/knowledge/` | `content/knowledge/` |
-| `data/tempData/` | `content/drafts/` |
+| `data/tempData/` | （廃止・`content/knowledge/` に統合） |
 | `public/html/` | `views/pages/` |
 | `private/` | `views/admin/` |
 | `public/files/` | `public/uploads/` |

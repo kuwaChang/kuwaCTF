@@ -4,6 +4,7 @@ const sqlite3 = require("sqlite3").verbose();
 const session = require("express-session");
 const SQLiteStore = require("connect-sqlite3")(session);
 const cors = require("cors");
+const { cspMiddleware } = require("./config/csp");
 const fs = require("fs");
 const os = require("os");
 const { Server } = require("socket.io");
@@ -391,7 +392,8 @@ function checkLanAccess(req, res, next) {
   next();
 }
 
-// セキュリティ: JSONペイロードサイズ制限（DoS対策）
+// セキュリティ: Helmet（CSPはページ種別ごとに src/config/csp.js で設定）
+app.use(cspMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

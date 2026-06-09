@@ -14,7 +14,7 @@
   "dependencies": {
     "@langchain/community": "^1.1.16",
     "@langchain/core": "^1.1.26",
-    "@langchain/ollama": "^0.1.0",
+    "@langchain/ollama": "^1.2.7",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
     "chromadb": "^1.8.1",
@@ -22,7 +22,7 @@
     "ejs": "^4.0.1",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
-    "helmet": "^8.1.0",
+    "helmet": "^8.2.0",
     "langchain": "^1.2.25",
     "multer": "^2.0.2",
     "node-pre-gyp": "^0.17.0",

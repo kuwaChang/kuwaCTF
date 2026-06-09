@@ -5,6 +5,10 @@ const CHEAT_ACHIEVEMENT_ID = "rpg_cheat";
 
 let stageTable = [];
 let shopItems = [];
+let runtimeSaveSnapshot = null;
+let runtimeSigSnapshot = null;
+let isInternalSaveWrite = false;
+let storageTamperHooked = false;
 
 function createDefaultState() {
   const firstStageId = stageTable[0]?.id ?? 1;
@@ -95,6 +99,7 @@ async function loadGameData() {
 }
 
 function bindEvents() {
+  installStorageTamperHooks();
   if (ui.syncScoreBtn) {
     ui.syncScoreBtn.addEventListener("click", syncScoreFromServer);
   }
@@ -113,9 +118,21 @@ function bindEvents() {
   if (ui.stageSelection) {
     ui.stageSelection.addEventListener("click", onStageSelectionClick);
   }
+  setInterval(() => {
+    checkAndHandleLocalTamper("local_storage_poll");
+  }, 1500);
+  window.addEventListener("focus", () => {
+    checkAndHandleLocalTamper("local_storage_focus");
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      checkAndHandleLocalTamper("local_storage_visible");
+    }
+  });
 }
 
 async function syncScoreFromServer() {
+  checkAndHandleLocalTamper("local_storage_sync");
   if (ui.syncMessage) ui.syncMessage.textContent = "同期中...";
   try {
     const res = await fetch("/getScore", { credentials: "include" });
@@ -178,6 +195,7 @@ async function syncGpFromSolvedProblems() {
 }
 
 function onAttack() {
+  checkAndHandleLocalTamper("local_storage_attack");
   if (isStageCleared(state.selectedStage)) {
     pushLog("このステージは全クリア済みです。未クリアのステージを選択してください。");
     render();
@@ -197,6 +215,7 @@ function onAttack() {
 }
 
 function onGuard() {
+  checkAndHandleLocalTamper("local_storage_guard");
   if (isStageCleared(state.selectedStage)) {
     pushLog("このステージは全クリア済みです。未クリアのステージを選択してください。");
     render();
@@ -212,6 +231,7 @@ function onGuard() {
 }
 
 function onNextEnemy() {
+  checkAndHandleLocalTamper("local_storage_next_enemy");
   if (state.enemyHp > 0 && state.player.hp > 0) {
     pushLog("敵を倒してから次へ進んでください。");
     render();
@@ -305,6 +325,7 @@ function calcDamage(attackerAtk, defenderDef) {
 }
 
 function upgradeStat(kind) {
+  checkAndHandleLocalTamper("local_storage_upgrade");
   const costMap = { maxHp: 50, atk: 60, def: 60, spd: 70 };
   const cost = costMap[kind];
   if (state.gp < cost) {
@@ -351,6 +372,7 @@ function renderShop() {
 }
 
 function buyItem(itemId) {
+  checkAndHandleLocalTamper("local_storage_buy");
   const item = shopItems.find((i) => i.id === itemId);
   if (!item) return;
   if (state.inventory.includes(item.id)) return;
@@ -367,6 +389,7 @@ function buyItem(itemId) {
 }
 
 function equipItem(itemId) {
+  checkAndHandleLocalTamper("local_storage_equip");
   if (!state.inventory.includes(itemId)) return;
   const item = shopItems.find((i) => i.id === itemId);
   if (!item) return;
@@ -490,17 +513,23 @@ async function loadState() {
         await recordCheatDetected("save_signature_mismatch", mergedLocal);
       }
       writeStateToLocal(mergedLocal);
+      updateRuntimeSaveSnapshot(mergedLocal);
       return mergedLocal;
     }
 
-    return structuredClone(defaultState);
+    const initialState = structuredClone(defaultState);
+    updateRuntimeSaveSnapshot(initialState);
+    return initialState;
   } catch {
-    return structuredClone(defaultState);
+    const fallbackState = structuredClone(defaultState);
+    updateRuntimeSaveSnapshot(fallbackState);
+    return fallbackState;
   }
 }
 
 function saveState() {
   writeStateToLocal(state);
+  updateRuntimeSaveSnapshot(state);
 }
 
 function loadStateFromLocalStorage() {
@@ -519,8 +548,80 @@ function loadStateFromLocalStorage() {
 
 function writeStateToLocal(nextState) {
   const raw = JSON.stringify(nextState);
-  localStorage.setItem(SAVE_KEY, raw);
-  localStorage.setItem(SAVE_SIGNATURE_KEY, hashString(raw));
+  isInternalSaveWrite = true;
+  try {
+    localStorage.setItem(SAVE_KEY, raw);
+    localStorage.setItem(SAVE_SIGNATURE_KEY, hashString(raw));
+  } finally {
+    isInternalSaveWrite = false;
+  }
+}
+
+function updateRuntimeSaveSnapshot(targetState) {
+  const raw = JSON.stringify(targetState);
+  runtimeSaveSnapshot = raw;
+  runtimeSigSnapshot = hashString(raw);
+}
+
+function installStorageTamperHooks() {
+  if (storageTamperHooked || typeof Storage === "undefined") return;
+  storageTamperHooked = true;
+  const originalSetItem = Storage.prototype.setItem;
+  const originalRemoveItem = Storage.prototype.removeItem;
+  const originalClear = Storage.prototype.clear;
+
+  Storage.prototype.setItem = function patchedSetItem(key, value) {
+    const targetKey = String(key);
+    const isSaveKey = targetKey === SAVE_KEY || targetKey === SAVE_SIGNATURE_KEY;
+    if (!isInternalSaveWrite && isSaveKey) {
+      recordCheatDetected(`local_storage_setitem_${targetKey}`).catch((err) => {
+        console.warn("storage setItem cheat report failed", err);
+      });
+    }
+    return originalSetItem.call(this, key, value);
+  };
+
+  Storage.prototype.removeItem = function patchedRemoveItem(key) {
+    const targetKey = String(key);
+    const isSaveKey = targetKey === SAVE_KEY || targetKey === SAVE_SIGNATURE_KEY;
+    if (!isInternalSaveWrite && isSaveKey) {
+      recordCheatDetected(`local_storage_remove_${targetKey}`).catch((err) => {
+        console.warn("storage removeItem cheat report failed", err);
+      });
+    }
+    return originalRemoveItem.call(this, key);
+  };
+
+  Storage.prototype.clear = function patchedClear() {
+    if (!isInternalSaveWrite) {
+      recordCheatDetected("local_storage_clear").catch((err) => {
+        console.warn("storage clear cheat report failed", err);
+      });
+    }
+    return originalClear.call(this);
+  };
+}
+
+function checkAndHandleLocalTamper(baseReason) {
+  if (!state?.cheatFlags) return;
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return;
+  const sig = localStorage.getItem(SAVE_SIGNATURE_KEY);
+  const currentRawSig = hashString(raw);
+  const saveChangedInRuntime = runtimeSaveSnapshot !== null && raw !== runtimeSaveSnapshot;
+  const signatureMismatch = Boolean(sig) && sig !== currentRawSig;
+  const signatureChangedInRuntime = runtimeSigSnapshot !== null && sig !== runtimeSigSnapshot;
+
+  if (!saveChangedInRuntime && !signatureMismatch && !signatureChangedInRuntime) {
+    return;
+  }
+
+  const reason = signatureMismatch ? `${baseReason}_signature_mismatch` : `${baseReason}_runtime_changed`;
+  recordCheatDetected(reason).catch((err) => {
+    console.warn("runtime cheat report failed", err);
+  });
+  runtimeSaveSnapshot = raw;
+  runtimeSigSnapshot = sig ?? currentRawSig;
 }
 
 function hashString(input) {
@@ -540,7 +641,13 @@ async function recordCheatDetected(reason, targetState = state) {
   targetState.cheatFlags.detected = true;
   targetState.log.push("不正改ざんの痕跡を検知。隠し実績を判定します。");
 
-  if (targetState.cheatFlags.reported) return;
+  if (targetState.cheatFlags.reported) {
+    const alreadyUnlocked = await fetchCheatAchievementDetail();
+    if (alreadyUnlocked?.unlocked) return;
+    targetState.cheatFlags.reported = false;
+    targetState.log.push("チート実績の解除が未反映のため、再判定を行います。");
+  }
+
   try {
     const res = await fetch("/achievements/check", {
       method: "POST",
@@ -554,25 +661,42 @@ async function recordCheatDetected(reason, targetState = state) {
     if (!res.ok) return;
     const data = await res.json();
     const unlocked = Array.isArray(data?.unlocked) ? data.unlocked : [];
-    if (unlocked.includes(CHEAT_ACHIEVEMENT_ID)) {
+    const unlockedByCheck = unlocked.includes(CHEAT_ACHIEVEMENT_ID);
+    const cheatAchievement = await fetchCheatAchievementDetail();
+    const confirmedUnlocked = unlockedByCheck || Boolean(cheatAchievement?.unlocked);
+    if (confirmedUnlocked) {
       targetState.log.push("🏆 隠し実績解除: チートコード（改ざんを検知）");
-      try {
-        const listRes = await fetch("/achievements/list", { credentials: "include" });
-        if (listRes.ok) {
-          const achievements = await listRes.json();
-          const cheatAchievement = achievements?.[CHEAT_ACHIEVEMENT_ID];
-          if (cheatAchievement?.unlocked) {
-            const { showAchievementUnlocked } = await import("./achievements.js");
-            showAchievementUnlocked(cheatAchievement);
-          }
+      if (cheatAchievement?.unlocked) {
+        try {
+          const { showAchievementUnlocked } = await import("./achievements.js");
+          showAchievementUnlocked(cheatAchievement);
+        } catch (notifyErr) {
+          console.warn("cheat achievement notification failed", notifyErr);
         }
-      } catch (notifyErr) {
-        console.warn("cheat achievement notification failed", notifyErr);
       }
+      targetState.cheatFlags.reported = true;
+    } else {
+      targetState.cheatFlags.reported = false;
+      targetState.log.push("チート実績の解除確認に失敗。次回操作時に再試行します。");
     }
-    targetState.cheatFlags.reported = true;
   } catch (err) {
     console.warn("cheat achievement report failed", err);
+    targetState.cheatFlags.reported = false;
+  }
+}
+
+async function fetchCheatAchievementDetail() {
+  try {
+    const listRes = await fetch("/achievements/list", {
+      credentials: "include",
+      cache: "no-store"
+    });
+    if (!listRes.ok) return null;
+    const achievements = await listRes.json();
+    return achievements?.[CHEAT_ACHIEVEMENT_ID] || null;
+  } catch (err) {
+    console.warn("cheat achievement fetch failed", err);
+    return null;
   }
 }
 
@@ -656,6 +780,7 @@ function onStageSelectionClick(event) {
 }
 
 function selectStage(stageId) {
+  checkAndHandleLocalTamper("local_storage_stage_select");
   const stage = stageTable.find((s) => s.id === stageId);
   if (!stage) return;
   state.selectedStage = stageId;

