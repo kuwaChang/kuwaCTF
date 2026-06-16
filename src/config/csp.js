@@ -12,22 +12,17 @@ const LAB_PATHS = new Set([
   "/pt",
 ]);
 
-const LAB_HTML_FILES = new Set([
-  "/html/xss_index.html",
-  "/html/sql_index.html",
-  "/html/path-traversal_index.html",
-]);
-
 // インライン<script>を含むページ（段階的に外部JSへ移行予定）
 const INLINE_SCRIPT_PATHS = new Set([
+  "/register",
   "/register_form.html",
   "/tutor",
-  "/html/advertisement.html",
+  "/advertisement",
 ]);
 
 function isLabPath(req) {
   const path = req.path.split("?")[0].toLowerCase();
-  if (LAB_PATHS.has(path) || LAB_HTML_FILES.has(path)) {
+  if (LAB_PATHS.has(path)) {
     return true;
   }
   if (path.startsWith("/xss/") || path.startsWith("/path-traversal/download")) {

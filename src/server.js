@@ -56,6 +56,8 @@ function rateLimit(req, res, next) {
     '/css/',
     '/lib/',
     '/icons/',
+    '/images/',
+    '/data/',
     '/files/'
   ];
   
@@ -405,7 +407,29 @@ app.use(rateLimit);
 
 app.use(express.static(paths.PUBLIC));
 app.use("/files", express.static(paths.UPLOADS));
-app.use("/html", express.static(path.join(paths.VIEWS, "pages")));
+
+// 旧URL互換: /html/xxx.html へのアクセスは新しいクリーンURLへリダイレクト
+const LEGACY_HTML_REDIRECTS = {
+  "index.html": "/",
+  "mypage.html": "/mypage",
+  "register_form.html": "/register",
+  "tutor.html": "/tutor",
+  "pre.html": "/pre",
+  "game.html": "/game",
+  "game-battle.html": "/game-battle",
+  "advertisement.html": "/advertisement",
+  "flag-hidden.html": "/flag-hidden",
+  "sql_index.html": "/sql",
+  "xss_index.html": "/xss",
+  "path-traversal_index.html": "/path-traversal",
+};
+app.get("/html/:file", (req, res, next) => {
+  const target = LEGACY_HTML_REDIRECTS[req.params.file];
+  if (target) {
+    return res.redirect(301, target);
+  }
+  next();
+});
 
 // セキュリティ: CORS設定の改善（LAN内のみ許可）
 app.use(cors(
@@ -538,14 +562,33 @@ app.get("/mypage", (req, res) => {
   res.sendFile(path.join(paths.VIEWS, "pages", "mypage.html"));
 });
 
-// 新規登録フォーム
-app.get("/register_form.html", (req, res) => {
+// 新規登録フォーム（旧URL /register_form.html も互換のため残す）
+app.get(["/register", "/register_form.html"], (req, res) => {
   res.sendFile(path.join(paths.VIEWS, "pages", "register_form.html"));
 });
 
 // AIチューター
 app.get("/tutor", (req, res) => {
   res.sendFile(path.join(paths.VIEWS, "pages", "tutor.html"));
+});
+
+// はじめての方向けページ
+app.get("/pre", (req, res) => {
+  res.sendFile(path.join(paths.VIEWS, "pages", "pre.html"));
+});
+
+// CTF RPGモード
+app.get("/game", (req, res) => {
+  res.sendFile(path.join(paths.VIEWS, "pages", "game.html"));
+});
+
+app.get("/game-battle", (req, res) => {
+  res.sendFile(path.join(paths.VIEWS, "pages", "game-battle.html"));
+});
+
+// 広告ページ（flag-hidden 演習用）
+app.get("/advertisement", (req, res) => {
+  res.sendFile(path.join(paths.VIEWS, "pages", "advertisement.html"));
 });
 
 // ============================================

@@ -9,6 +9,10 @@ let runtimeSaveSnapshot = null;
 let runtimeSigSnapshot = null;
 let isInternalSaveWrite = false;
 let storageTamperHooked = false;
+let cheatAchievementConfirmed = false;
+let lastCheatReportAt = 0;
+let lastReportedTamperFingerprint = null;
+const CHEAT_REPORT_COOLDOWN_MS = 30 * 1000;
 
 function createDefaultState() {
   const firstStageId = stageTable[0]?.id ?? 1;
@@ -31,7 +35,7 @@ function createDefaultState() {
       hp: 120,
       atk: 20,
       def: 12,
-      spd: 10,
+      lucky: 5,
       guard: false
     },
     equipment: { weapon: null, armor: null, accessory: null },
@@ -64,6 +68,7 @@ const ui = {
   attackBtn: document.getElementById("attackBtn"),
   guardBtn: document.getElementById("guardBtn"),
   nextEnemyBtn: document.getElementById("nextEnemyBtn"),
+  stageClearActions: document.getElementById("stageClearActions"),
   playerHpFill: document.getElementById("playerHpFill"),
   playerHpText: document.getElementById("playerHpText")
 };
@@ -288,9 +293,21 @@ function playerAction(action, enemy, stats) {
     pushLog("防御体勢に入った。受けるダメージを軽減する。");
     return;
   }
-  const dmg = calcDamage(stats.atk, enemy.def);
+  const baseDmg = calcDamage(stats.atk, enemy.def);
+  const critical = isCriticalHit(stats.lucky);
+  const dmg = critical ? Math.floor(baseDmg * 1.5) : baseDmg;
   state.enemyHp -= dmg;
-  pushLog(`あなたの攻撃: ${enemy.name}に ${dmg} ダメージ。`);
+  if (critical) {
+    pushLog(`クリティカル！ あなたの攻撃: ${enemy.name}に ${dmg} ダメージ。`);
+  } else {
+    pushLog(`あなたの攻撃: ${enemy.name}に ${dmg} ダメージ。`);
+  }
+}
+
+// luckyの値がそのままクリティカル発生率(%)になる（上限100%）
+function isCriticalHit(lucky) {
+  const chance = Math.max(0, Math.min(100, Number(lucky) || 0));
+  return Math.random() * 100 < chance;
 }
 
 function enemyAction(enemy, stats) {
@@ -326,7 +343,7 @@ function calcDamage(attackerAtk, defenderDef) {
 
 function upgradeStat(kind) {
   checkAndHandleLocalTamper("local_storage_upgrade");
-  const costMap = { maxHp: 50, atk: 60, def: 60, spd: 70 };
+  const costMap = { maxHp: 50, atk: 60, def: 60, lucky: 80 };
   const cost = costMap[kind];
   if (state.gp < cost) {
     pushLog(`GP不足: ${kind} 強化には ${cost} GP 必要。`);
@@ -345,22 +362,46 @@ function upgradeStat(kind) {
   render();
 }
 
+const SHOP_SLOTS = [
+  { slot: "weapon", label: "武器" },
+  { slot: "armor", label: "防具" },
+  { slot: "accessory", label: "装飾" }
+];
+
 function renderShop() {
   if (!ui.shopList) return;
   ui.shopList.innerHTML = "";
-  shopItems.forEach((item) => {
-    const card = document.createElement("div");
-    card.className = "shop-item";
-    const owned = state.inventory.includes(item.id);
-    const equipped = state.equipment[item.slot] === item.id;
-    card.innerHTML = `
-      <strong>${item.name}</strong><br>
-      費用: ${item.cost} GP<br>
-      補正: ATK ${signed(item.atk)} / DEF ${signed(item.def)} / SPD ${signed(item.spd)}<br>
-      <button data-buy="${item.id}" ${owned ? "disabled" : ""}>${owned ? "購入済み" : "購入"}</button>
-      <button data-equip="${item.id}" ${owned ? "" : "disabled"}>${equipped ? "装備中" : "装備"}</button>
-    `;
-    ui.shopList.appendChild(card);
+  SHOP_SLOTS.forEach(({ slot, label }) => {
+    const items = shopItems.filter((item) => item.slot === slot);
+    if (items.length === 0) return;
+
+    const group = document.createElement("section");
+    group.className = "shop-group";
+
+    const title = document.createElement("h3");
+    title.className = "shop-group-title";
+    title.textContent = label;
+    group.appendChild(title);
+
+    const grid = document.createElement("div");
+    grid.className = "shop-group-grid";
+    items.forEach((item) => {
+      const card = document.createElement("div");
+      card.className = "shop-item";
+      const owned = state.inventory.includes(item.id);
+      const equipped = state.equipment[item.slot] === item.id;
+      card.innerHTML = `
+        <strong>${item.name}</strong><br>
+        費用: ${item.cost} GP<br>
+        補正: ATK ${signed(item.atk)} / DEF ${signed(item.def)} / LUCKY ${signed(item.lucky ?? 0)}<br>
+        <button data-buy="${item.id}" ${owned ? "disabled" : ""}>${owned ? "購入済み" : "購入"}</button>
+        <button data-equip="${item.id}" ${owned ? "" : "disabled"}>${equipped ? "装備中" : "装備"}</button>
+      `;
+      grid.appendChild(card);
+    });
+    group.appendChild(grid);
+
+    ui.shopList.appendChild(group);
   });
 
   ui.shopList.querySelectorAll("[data-buy]").forEach((btn) => {
@@ -404,7 +445,7 @@ function effectivePlayerStats() {
     maxHp: state.player.maxHp,
     atk: state.player.atk,
     def: state.player.def,
-    spd: state.player.spd
+    lucky: state.player.lucky ?? 0
   };
   Object.values(state.equipment).forEach((itemId) => {
     if (!itemId) return;
@@ -412,9 +453,15 @@ function effectivePlayerStats() {
     if (!item) return;
     stats.atk += item.atk;
     stats.def += item.def;
-    stats.spd += item.spd;
+    stats.lucky += item.lucky ?? 0;
   });
   return stats;
+}
+
+function hpBarColor(percent) {
+  // 100% -> 緑 (hue 120), 0% -> 赤 (hue 0)
+  const hue = Math.round(Math.max(0, Math.min(100, percent)) * 1.2);
+  return `hsl(${hue}, 75%, 45%)`;
 }
 
 function render() {
@@ -422,16 +469,43 @@ function render() {
   const enemy = getCurrentEnemy();
   const stats = effectivePlayerStats();
   if (ui.playerSummary) {
+    const playerHp = Math.max(0, state.player.hp);
+    const playerHpPercent = Math.max(0, Math.min(100, Math.round((playerHp / stats.maxHp) * 100)));
+    const statRow = (label, value, max, cls) => {
+      const percent = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
+      return `
+        <div class="player-stat-row">
+          <span class="player-stat-label">${label}</span>
+          <div class="player-stat-bar"><div class="player-stat-fill ${cls}" style="width: ${percent}%;"></div></div>
+          <span class="player-stat-value">${value}</span>
+        </div>`;
+    };
     ui.playerSummary.innerHTML = `
-      <div class="stat-card">GP: ${state.gp}</div>
-      <div class="stat-card">Lv: ${state.player.level}</div>
-      <div class="stat-card">HP: ${state.player.hp} / ${stats.maxHp}</div>
-      <div class="stat-card">ATK: ${stats.atk}</div>
-      <div class="stat-card">DEF: ${stats.def}</div>
-      <div class="stat-card">SPD: ${stats.spd}</div>
-      <div class="stat-card">武器: ${equipName("weapon")}</div>
-      <div class="stat-card">防具: ${equipName("armor")}</div>
-      <div class="stat-card">装飾: ${equipName("accessory")}</div>
+      <div class="player-card">
+        <div class="player-portrait">
+          <img src="/images/player.png" alt="プレイヤー">
+          <div class="player-level-badge">Lv ${state.player.level}</div>
+        </div>
+        <div class="player-detail">
+          <div class="player-headline">
+            <span class="player-name">プレイヤー</span>
+            <span class="player-gp-badge">GP ${state.gp}</span>
+          </div>
+          <div class="player-stat-row">
+            <span class="player-stat-label">HP</span>
+            <div class="player-stat-bar"><div class="player-stat-fill hp" style="width: ${playerHpPercent}%; background: ${hpBarColor(playerHpPercent)};"></div></div>
+            <span class="player-stat-value">${playerHp} / ${stats.maxHp}</span>
+          </div>
+          ${statRow("ATK", stats.atk, 120, "atk")}
+          ${statRow("DEF", stats.def, 120, "def")}
+          ${statRow("LUCKY", stats.lucky, 100, "lucky")}
+          <div class="player-equip-list">
+            <span class="player-equip-chip">武器: ${equipName("weapon")}</span>
+            <span class="player-equip-chip">防具: ${equipName("armor")}</span>
+            <span class="player-equip-chip">装飾: ${equipName("accessory")}</span>
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -452,11 +526,11 @@ function render() {
         </div>
         <div class="enemy-hp-wrap">
           <div class="enemy-hp-bar">
-            <div class="enemy-hp-fill" style="width: ${hpPercent}%;"></div>
+            <div class="enemy-hp-fill" style="width: ${hpPercent}%; background: ${hpBarColor(hpPercent)};"></div>
           </div>
           <div class="enemy-hp-text">HP: ${enemyHp} / ${enemy.maxHp}</div>
         </div>
-        <div class="enemy-meta">ATK: ${enemy.atk} / DEF: ${enemy.def} / SPD: ${enemy.spd}</div>
+        <div class="enemy-meta">ATK: ${enemy.atk} / DEF: ${enemy.def}</div>
         撃破報酬: ${enemy.reward} GP
       </div>
     `;
@@ -468,6 +542,22 @@ function render() {
     ui.currentStageInfo.textContent = `${stage.name} (${cleared}/${total} クリア)`;
   }
 
+  const stageCleared = isStageCleared(stage.id);
+  const battleOngoing = state.enemyHp > 0 && state.player.hp > 0;
+  if (ui.attackBtn) {
+    ui.attackBtn.disabled = stageCleared || !battleOngoing;
+  }
+  if (ui.guardBtn) {
+    ui.guardBtn.disabled = stageCleared || !battleOngoing;
+  }
+  if (ui.nextEnemyBtn) {
+    // 戦闘決着（敵撃破 or 敗北）まで押せない。全クリア後も不要なので無効化。
+    ui.nextEnemyBtn.disabled = stageCleared || battleOngoing;
+  }
+  if (ui.stageClearActions) {
+    ui.stageClearActions.classList.toggle("visible", stageCleared);
+  }
+
   if (ui.battleLog) {
     ui.battleLog.textContent = state.log.slice(-3).join("\n");
   }
@@ -475,6 +565,7 @@ function render() {
     const hp = Math.max(0, state.player.hp);
     const hpPercent = Math.max(0, Math.min(100, Math.round((hp / stats.maxHp) * 100)));
     ui.playerHpFill.style.width = `${hpPercent}%`;
+    ui.playerHpFill.style.background = hpBarColor(hpPercent);
     ui.playerHpText.textContent = `${hp} / ${stats.maxHp}`;
   }
   renderShop();
@@ -616,6 +707,14 @@ function checkAndHandleLocalTamper(baseReason) {
     return;
   }
 
+  // 改ざん内容を上書きせずに残す（改ざん値はリロード時にそのまま反映させるのがゲームの仕様）。
+  // 同一の改ざん内容を毎ポーリングで再通報しないようフィンガープリントで判定する
+  const fingerprint = `${currentRawSig}:${sig ?? ""}`;
+  if (fingerprint === lastReportedTamperFingerprint) {
+    return;
+  }
+  lastReportedTamperFingerprint = fingerprint;
+
   const reason = signatureMismatch ? `${baseReason}_signature_mismatch` : `${baseReason}_runtime_changed`;
   recordCheatDetected(reason).catch((err) => {
     console.warn("runtime cheat report failed", err);
@@ -641,9 +740,20 @@ async function recordCheatDetected(reason, targetState = state) {
   targetState.cheatFlags.detected = true;
   targetState.log.push("不正改ざんの痕跡を検知。隠し実績を判定します。");
 
+  // 実績解除確認済みなら以降サーバーへ問い合わせない
+  if (cheatAchievementConfirmed) return;
+
+  // 失敗時の再試行が高頻度ポーリングと重なってリクエストが暴発しないようクールダウンを設ける
+  const now = Date.now();
+  if (now - lastCheatReportAt < CHEAT_REPORT_COOLDOWN_MS) return;
+  lastCheatReportAt = now;
+
   if (targetState.cheatFlags.reported) {
     const alreadyUnlocked = await fetchCheatAchievementDetail();
-    if (alreadyUnlocked?.unlocked) return;
+    if (alreadyUnlocked?.unlocked) {
+      cheatAchievementConfirmed = true;
+      return;
+    }
     targetState.cheatFlags.reported = false;
     targetState.log.push("チート実績の解除が未反映のため、再判定を行います。");
   }
@@ -665,6 +775,7 @@ async function recordCheatDetected(reason, targetState = state) {
     const cheatAchievement = await fetchCheatAchievementDetail();
     const confirmedUnlocked = unlockedByCheck || Boolean(cheatAchievement?.unlocked);
     if (confirmedUnlocked) {
+      cheatAchievementConfirmed = true;
       targetState.log.push("🏆 隠し実績解除: チートコード（改ざんを検知）");
       if (cheatAchievement?.unlocked) {
         try {
@@ -759,24 +870,21 @@ function normalizeStageClears(input) {
 }
 
 function onStageSelectionClick(event) {
-  const selectBtn = event.target.closest("[data-select-stage]");
   const battleBtn = event.target.closest("[data-battle-stage]");
-  if (!selectBtn && !battleBtn) return;
-  const stageId = Number((selectBtn || battleBtn).dataset[selectBtn ? "selectStage" : "battleStage"]);
+  if (!battleBtn) return;
+  const stageId = Number(battleBtn.dataset.battleStage);
   if (!isStageUnlocked(stageId)) {
     pushLog(`Stage ${stageId} はロック中です。前ステージを全クリアしてください。`);
     render();
     return;
   }
-  if (battleBtn && isStageCleared(stageId)) {
+  if (isStageCleared(stageId)) {
     pushLog(`Stage ${stageId} は全クリア済みのため再戦できません。`);
     render();
     return;
   }
   selectStage(stageId);
-  if (battleBtn) {
-    window.location.href = "/html/game-battle.html";
-  }
+  window.location.href = "/game-battle";
 }
 
 function selectStage(stageId) {
@@ -816,7 +924,6 @@ function renderStageSelection() {
         </div>
         <p class="stage-count">${cleared}/${total} 体撃破</p>
         <div class="stage-card-actions">
-          <button data-select-stage="${stage.id}" ${unlocked ? "" : "disabled"}>選択</button>
           <button data-battle-stage="${stage.id}" ${(unlocked && !clearedAll) ? "" : "disabled"}>このステージに挑戦</button>
         </div>
         ${clearedAll ? `<div class="stage-clear-aura" aria-hidden="true"></div>` : ""}

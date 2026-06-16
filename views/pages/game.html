@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CTF RPGモード</title>
-  <link rel="stylesheet" href="../css/game.css">
+  <link rel="stylesheet" href="/css/game.css">
 </head>
 <body>
   <main class="container">
@@ -13,14 +13,14 @@
       <p>CTFで稼いだ得点を使ってキャラを強化し、敵を倒そう。</p>
       <div class="actions">
         <button id="syncScoreBtn">CTF解答を同期（GP反映）</button>
-        <a class="link-btn" href="/html/index.html">トップへ戻る</a>
+        <a class="link-btn" href="/">トップへ戻る</a>
       </div>
       <p id="syncMessage" class="message"></p>
     </header>
 
     <section class="panel">
       <h2>プレイヤー情報</h2>
-      <div id="playerSummary" class="summary-grid"></div>
+      <div id="playerSummary" class="player-summary"></div>
     </section>
 
     <section class="panel">
@@ -29,7 +29,7 @@
         <button data-upgrade="maxHp">HP強化 (50 GP)</button>
         <button data-upgrade="atk">ATK強化 (60 GP)</button>
         <button data-upgrade="def">DEF強化 (60 GP)</button>
-        <button data-upgrade="spd">SPD強化 (70 GP)</button>
+        <button data-upgrade="lucky">LUCKY強化 (80 GP)</button>
       </div>
     </section>
 
@@ -44,13 +44,6 @@
       <div id="stageSelection" class="stage-grid"></div>
     </section>
 
-    <section class="panel">
-      <h2>冒険に出る</h2>
-      <p>ステージカードの「このステージに挑戦」から戦闘ページへ移動してください。</p>
-      <div class="actions">
-        <a class="link-btn" href="/html/game-battle.html">戦闘ページへ</a>
-      </div>
-    </section>
   </main>
 
   <script type="module" src="../js/game.js"></script>

@@ -12,8 +12,8 @@
       <h1>CTF RPG 戦闘ページ</h1>
       <p>敵を倒してGPを稼ごう。装備や強化はトップページで行えます。</p>
       <div class="actions">
-        <a class="link-btn" href="/html/game.html">RPGトップへ戻る</a>
-        <a class="link-btn" href="/html/index.html">サイトトップへ戻る</a>
+        <a class="link-btn" href="/game">RPGトップへ戻る</a>
+        <a class="link-btn" href="/">サイトトップへ戻る</a>
       </div>
     </header>
 
@@ -24,7 +24,7 @@
 
     <section class="panel">
       <h2>プレイヤー情報</h2>
-      <div id="playerSummary" class="summary-grid"></div>
+      <div id="playerSummary" class="player-summary"></div>
     </section>
 
     <section class="panel battle-screen">
@@ -34,6 +34,10 @@
         <button id="attackBtn">攻撃</button>
         <button id="guardBtn">防御</button>
         <button id="nextEnemyBtn">次の敵へ</button>
+      </div>
+      <div id="stageClearActions" class="stage-clear-actions">
+        <p class="stage-clear-message">ステージクリア！</p>
+        <a class="link-btn" href="/game">RPGトップへ戻る</a>
       </div>
       <div class="battle-bottom">
         <div class="player-hp-wrap">

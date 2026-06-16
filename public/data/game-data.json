@@ -9,9 +9,8 @@
           "key": "s1_e1",
           "name": "スクリプトスライム",
           "maxHp": 90,
-          "atk": 16,
-          "def": 8,
-          "spd": 8,
+          "atk": 30,
+          "def": 10,
           "actionInterval": 2,
           "reward": 60,
           "image": "/images/script_slime.png"
@@ -19,13 +18,180 @@
         {
           "key": "s1_e2",
           "name": "ログハウンド",
-          "maxHp": 110,
-          "atk": 19,
-          "def": 10,
-          "spd": 9,
+          "maxHp": 120,
+          "atk": 45,
+          "def": 15,
           "actionInterval": 2,
           "reward": 70,
           "image": "/images/log_hound.png"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Stage 2: Recon Ruins",
+      "description": "探索と観察のステージ。敵の数が増え、基礎だけでは少し苦戦する。",
+      "enemies": [
+        {
+          "key": "s2_e1",
+          "name": "ポートゴブリン",
+          "maxHp": 150,
+          "atk": 55,
+          "def": 15,
+          "actionInterval": 2,
+          "reward": 90,
+          "image": "/images/port_goblin.png"
+        },
+        {
+          "key": "s2_e2",
+          "name": "ヘッダーバット",
+          "maxHp": 165,
+          "atk": 65,
+          "def": 15,
+          "actionInterval": 2,
+          "reward": 100,
+          "image": "/images/header_bat.png"
+        },
+        {
+          "key": "s2_e3",
+          "name": "クエリワーム",
+          "maxHp": 180,
+          "atk": 75,
+          "def": 15,
+          "actionInterval": 2,
+          "reward": 110,
+          "image": "/images/query_worm.png"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Stage 3: Cipher Cavern",
+      "description": "暗号と解析のステージ。敵の耐久力が上がり、長期戦になりやすい。",
+      "enemies": [
+        {
+          "key": "s3_e1",
+          "name": "シーザーウィスプ",
+          "maxHp": 230,
+          "atk": 85,
+          "def": 18,
+          "actionInterval": 2,
+          "reward": 140,
+          "image": "/images/caesar_wisp.png"
+        },
+        {
+          "key": "s3_e2",
+          "name": "ベース64ミミック",
+          "maxHp": 210,
+          "atk": 95,
+          "def": 18,
+          "actionInterval": 2,
+          "reward": 155,
+          "image": "/images/base64_mimic.png"
+        },
+        {
+          "key": "s3_e3",
+          "name": "ハッシュナイト",
+          "maxHp": 235,
+          "atk": 105,
+          "def": 21,
+          "actionInterval": 2,
+          "reward": 170,
+          "image": "/images/hash_knight.png"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Stage 4: Exploit Fortress",
+      "description": "攻撃力の高い敵が出現する中級後半ステージ。素早い判断が重要になる。",
+      "enemies": [
+        {
+          "key": "s4_e1",
+          "name": "SQLインジェクター",
+          "maxHp": 260,
+          "atk": 115,
+          "def": 23,
+          "actionInterval": 2,
+          "reward": 210,
+          "image": "/images/sql_injector.png"
+        },
+        {
+          "key": "s4_e2",
+          "name": "XSSファントム",
+          "maxHp": 240,
+          "atk": 125,
+          "def": 20,
+          "actionInterval": 1.8,
+          "reward": 225,
+          "image": "/images/xss_phantom.png"
+        },
+        {
+          "key": "s4_e3",
+          "name": "バッファオーガ",
+          "maxHp": 310,
+          "atk": 135,
+          "def": 27,
+          "actionInterval": 2,
+          "reward": 240,
+          "image": "/images/buffer_ogre.png"
+        },
+        {
+          "key": "s4_e4",
+          "name": "セッションリーパー",
+          "maxHp": 280,
+          "atk": 145,
+          "def": 24,
+          "actionInterval": 1.8,
+          "reward": 260,
+          "image": "/images/session_reaper.png"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Stage 5: Root Core",
+      "description": "最終ステージ。高耐久・高火力の敵がそろう総仕上げエリア。",
+      "enemies": [
+        {
+          "key": "s5_e1",
+          "name": "フォレンジックドラゴン",
+          "maxHp": 360,
+          "atk": 155,
+          "def": 30,
+          "actionInterval": 1.8,
+          "reward": 320,
+          "image": "/images/forensic_dragon.png"
+        },
+        {
+          "key": "s5_e2",
+          "name": "リバースエンジニア",
+          "maxHp": 390,
+          "atk": 165,
+          "def": 32,
+          "actionInterval": 1.8,
+          "reward": 350,
+          "image": "/images/reverse_engineer.png"
+        },
+        {
+          "key": "s5_e3",
+          "name": "ゼロデイデーモン",
+          "maxHp": 420,
+          "atk": 175,
+          "def": 34,
+          "actionInterval": 1.6,
+          "reward": 390,
+          "image": "/images/zero_day_demon.png"
+        },
+        {
+          "key": "s5_e4",
+          "name": "ルートガーディアン",
+          "maxHp": 500,
+          "atk": 185,
+          "def": 38,
+          "actionInterval": 1.7,
+          "reward": 450,
+          "image": "/images/root_guardian.png"
         }
       ]
     }
@@ -37,8 +203,31 @@
       "name": "ブロンズソード",
       "atk": 7,
       "def": 0,
-      "spd": 0,
       "cost": 120
+    },
+    {
+      "id": "silver_sword",
+      "slot": "weapon",
+      "name": "シルバーソード",
+      "atk": 10,
+      "def": 0,
+      "cost": 200
+    },
+    {
+      "id": "gold_sword",
+      "slot": "weapon",
+      "name": "ゴールドソード",
+      "atk": 20,
+      "def": 0,
+      "cost": 300
+    },
+    {
+      "id": "strongest_sword",
+      "slot": "weapon",
+      "name": "僕の考えた最強の剣",
+      "atk": 99999,
+      "def": 99999,
+      "cost": 99999
     },
     {
       "id": "steel_armor",
@@ -46,17 +235,49 @@
       "name": "スチールアーマー",
       "atk": 0,
       "def": 8,
-      "spd": -1,
       "cost": 150
     },
     {
-      "id": "swift_ring",
+      "id": "diamond_armor",
+      "slot": "armor",
+      "name": "ダイアモンドアーマー",
+      "atk": 0,
+      "def": 12,
+      "cost": 250
+    },
+    {
+      "id": "muscle",
       "slot": "accessory",
-      "name": "スイフトリング",
+      "name": "筋肉チャーム",
+      "atk": 10,
+      "def": 0,
+      "cost": 150
+    },
+    {
+      "id": "iron_wall",
+      "slot": "accessory",
+      "name": "鉄壁チャーム",
+      "atk": 0,
+      "def": 10,
+      "cost": 130
+    },
+    {
+      "id": "lucky_charm",
+      "slot": "accessory",
+      "name": "ラッキーチャーム",
       "atk": 0,
       "def": 0,
-      "spd": 4,
-      "cost": 130
+      "lucky": 5,
+      "cost": 100
+    },
+    {
+      "id": "Moms_keepsake",
+      "slot": "accessory",
+      "name": "母のお守りチャーム",
+      "atk": 0,
+      "def": 0,
+      "lucky": 20,
+      "cost": 500
     }
   ]
 }
