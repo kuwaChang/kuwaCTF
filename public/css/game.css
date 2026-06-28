@@ -180,6 +180,10 @@ button:disabled {
   background: linear-gradient(90deg, #fbbf24, #f59e0b);
 }
 
+.player-stat-fill.exp {
+  background: linear-gradient(90deg, #34d399, #10b981);
+}
+
 .player-stat-value {
   font-size: 13px;
   min-width: 2.5em;
@@ -215,10 +219,40 @@ button:disabled {
   }
 }
 
-.upgrade-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
+.growth-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.growth-lead {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.growth-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.growth-chip {
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.growth-bonus {
+  margin: 0;
+  font-size: 13px;
+  color: #34d399;
+  font-weight: 600;
 }
 
 .shop-list {
@@ -541,6 +575,7 @@ button:disabled {
 }
 
 .player-hp-wrap {
+  position: relative;
   background: rgba(2, 6, 23, 0.6);
   border: 1px solid #334155;
   border-radius: 8px;
@@ -572,4 +607,180 @@ button:disabled {
   margin-top: 6px;
   font-size: 14px;
   color: #cbd5e1;
+}
+
+/* ===== 戦闘エフェクト ===== */
+
+/* 敵被弾時のシェイク */
+.fx-hit-shake {
+  animation: fxHitShake 0.42s ease-in-out;
+}
+
+@keyframes fxHitShake {
+  0% { transform: translate(0, 0) rotate(0); }
+  15% { transform: translate(-8px, 2px) rotate(-2deg); }
+  30% { transform: translate(7px, -3px) rotate(2deg); }
+  45% { transform: translate(-6px, 3px) rotate(-1.5deg); }
+  60% { transform: translate(5px, -2px) rotate(1deg); }
+  75% { transform: translate(-3px, 1px) rotate(-0.5deg); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+
+/* 敵被弾時の白〜赤フラッシュ */
+.fx-hit-flash {
+  animation: fxHitFlash 0.42s ease-out;
+}
+
+@keyframes fxHitFlash {
+  0% { filter: brightness(2.6) saturate(0.4) drop-shadow(0 0 10px rgba(255, 255, 255, 0.9)); }
+  35% { filter: brightness(1.6) saturate(1.2) drop-shadow(0 0 8px rgba(248, 113, 113, 0.8)); }
+  100% { filter: none; }
+}
+
+/* 斬撃エフェクト（敵の上を斜めに走る光） */
+.fx-slash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95) 45%, rgba(186, 230, 253, 0.95) 55%, transparent);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  z-index: 5;
+  transform-origin: center;
+  animation: fxSlash 0.45s ease-out forwards;
+}
+
+.fx-slash.critical {
+  width: 300px;
+  height: 22px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 1) 42%, rgba(253, 224, 71, 1) 55%, transparent);
+  box-shadow: 0 0 26px rgba(253, 224, 71, 0.95);
+  animation-duration: 0.62s;
+}
+
+@keyframes fxSlash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-32deg) scaleX(0.1);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-32deg) scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-32deg) scaleX(1.15);
+  }
+}
+
+/* クリティカル時の文字バースト */
+.fx-crit-burst {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #fde047;
+  text-shadow: 0 0 10px rgba(250, 204, 21, 0.9), 0 2px 4px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  z-index: 6;
+  animation: fxCritBurst 0.85s ease-out forwards;
+}
+
+@keyframes fxCritBurst {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotate(-10deg); }
+  35% { opacity: 1; transform: translate(-50%, -50%) scale(1.25) rotate(4deg); }
+  60% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); }
+  100% { opacity: 0; transform: translate(-50%, -90%) scale(1); }
+}
+
+/* 浮き上がるダメージ数値 */
+.fx-damage-number {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  z-index: 7;
+  animation: fxDamageFloat 0.9s ease-out forwards;
+}
+
+.fx-damage-number.enemy {
+  font-size: 30px;
+  color: #fca5a5;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.7), 0 2px 3px rgba(0, 0, 0, 0.7);
+}
+
+.fx-damage-number.enemy.critical {
+  font-size: 42px;
+  color: #fde047;
+  text-shadow: 0 0 12px rgba(250, 204, 21, 0.9), 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.fx-damage-number.player {
+  font-size: 22px;
+  color: #fecaca;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.8), 0 2px 3px rgba(0, 0, 0, 0.7);
+}
+
+.fx-damage-number.player.guarded {
+  color: #bfdbfe;
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.8), 0 2px 3px rgba(0, 0, 0, 0.7);
+}
+
+@keyframes fxDamageFloat {
+  0% { opacity: 0; transform: translate(calc(-50% + var(--fx-x, 0px)), -10%) scale(0.6); }
+  20% { opacity: 1; transform: translate(calc(-50% + var(--fx-x, 0px)), -50%) scale(1.15); }
+  40% { transform: translate(calc(-50% + var(--fx-x, 0px)), -60%) scale(1); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--fx-x, 0px)), -130%) scale(1); }
+}
+
+/* プレイヤー被弾時、戦闘画面全体の赤フラッシュ＋揺れ */
+.fx-screen-hit {
+  animation: fxScreenHit 0.42s ease-out;
+}
+
+@keyframes fxScreenHit {
+  0% { box-shadow: inset 0 0 0 9999px rgba(239, 68, 68, 0); transform: translateX(0); }
+  15% { box-shadow: inset 0 0 0 9999px rgba(239, 68, 68, 0.32); transform: translateX(-6px); }
+  35% { transform: translateX(5px); }
+  55% { transform: translateX(-3px); }
+  100% { box-shadow: inset 0 0 0 9999px rgba(239, 68, 68, 0); transform: translateX(0); }
+}
+
+/* 防御時のシールドフラッシュ */
+.fx-guard-shield {
+  position: absolute;
+  inset: -2px;
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 5;
+  background: radial-gradient(circle at 50% 50%, rgba(96, 165, 250, 0.35), rgba(59, 130, 246, 0.08) 60%, transparent 75%);
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.7), 0 0 18px rgba(59, 130, 246, 0.6);
+  animation: fxGuardShield 0.55s ease-out forwards;
+}
+
+@keyframes fxGuardShield {
+  0% { opacity: 0; transform: scale(0.85); }
+  35% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-hit-shake,
+  .fx-hit-flash,
+  .fx-slash,
+  .fx-crit-burst,
+  .fx-damage-number,
+  .fx-screen-hit,
+  .fx-guard-shield {
+    animation: none !important;
+  }
 }

@@ -14,6 +14,17 @@ let lastCheatReportAt = 0;
 let lastReportedTamperFingerprint = null;
 const CHEAT_REPORT_COOLDOWN_MS = 30 * 1000;
 
+// レベルアップ関連設定
+const MAX_LEVEL = 99;
+// レベルアップ時に上昇するステータス量
+const LEVEL_GROWTH = { maxHp: 12, atk: 3, def: 2, lucky: 1 };
+
+// 次のレベルまでに必要な経験値。レベルが上がるほど必要量が増加する。
+function expRequiredForLevel(level) {
+  const lv = Math.max(1, Math.floor(Number(level) || 1));
+  return Math.floor(80 * Math.pow(1.25, lv - 1));
+}
+
 function createDefaultState() {
   const firstStageId = stageTable[0]?.id ?? 1;
   const firstEnemy = stageTable[0]?.enemies?.[0] ?? {};
@@ -31,6 +42,7 @@ function createDefaultState() {
     gpAwardedProblems: [],
     player: {
       level: 1,
+      exp: 0,
       maxHp: 120,
       hp: 120,
       atk: 20,
@@ -56,10 +68,15 @@ function createDefaultState() {
 
 let state = null;
 
+// 1ターン中に発生した演出をためておき、render()後にまとめて再生する。
+// render()はenemyAreaのHTMLを作り直すため、演出はDOM再構築後に実行する必要がある。
+let pendingEffects = [];
+
 const ui = {
   playerSummary: document.getElementById("playerSummary"),
   enemyArea: document.getElementById("enemyArea"),
   battleLog: document.getElementById("battleLog"),
+  growthInfo: document.getElementById("growthInfo"),
   shopList: document.getElementById("shopList"),
   syncMessage: document.getElementById("syncMessage"),
   syncScoreBtn: document.getElementById("syncScoreBtn"),
@@ -117,9 +134,6 @@ function bindEvents() {
   if (ui.nextEnemyBtn) {
     ui.nextEnemyBtn.addEventListener("click", onNextEnemy);
   }
-  document.querySelectorAll("[data-upgrade]").forEach((btn) => {
-    btn.addEventListener("click", () => upgradeStat(btn.dataset.upgrade));
-  });
   if (ui.stageSelection) {
     ui.stageSelection.addEventListener("click", onStageSelectionClick);
   }
@@ -201,11 +215,6 @@ async function syncGpFromSolvedProblems() {
 
 function onAttack() {
   checkAndHandleLocalTamper("local_storage_attack");
-  if (isStageCleared(state.selectedStage)) {
-    pushLog("このステージは全クリア済みです。未クリアのステージを選択してください。");
-    render();
-    return;
-  }
   if (state.player.hp <= 0) {
     pushLog("あなたは戦闘不能です。次の敵へ進んで再挑戦してください。");
     render();
@@ -221,11 +230,6 @@ function onAttack() {
 
 function onGuard() {
   checkAndHandleLocalTamper("local_storage_guard");
-  if (isStageCleared(state.selectedStage)) {
-    pushLog("このステージは全クリア済みです。未クリアのステージを選択してください。");
-    render();
-    return;
-  }
   if (state.player.hp <= 0 || state.enemyHp <= 0) {
     pushLog("今は防御できません。");
     render();
@@ -243,14 +247,15 @@ function onNextEnemy() {
     return;
   }
   const stage = getCurrentStage();
-  const nextIdx = getNextUnclearedEnemyIndex(stage.id);
-  if (nextIdx === -1) {
-    pushLog("このステージは全クリア済みです。トップで次ステージへ進んでください。");
-    saveState();
-    render();
-    return;
+  // 敵を撃破済みなら次の敵へ。最後の敵を倒した後は先頭に戻って周回できる。
+  // 敗北した場合は同じ敵に再挑戦する（インデックス据え置き）。
+  if (state.enemyHp <= 0) {
+    const looped = state.currentEnemyIndex + 1 >= stage.enemies.length;
+    state.currentEnemyIndex = looped ? 0 : state.currentEnemyIndex + 1;
+    if (looped) {
+      pushLog(`${stage.name} を周回。先頭の敵から再挑戦する。`);
+    }
   }
-  state.currentEnemyIndex = nextIdx;
   const enemy = getCurrentEnemy();
   state.enemyHp = enemy.maxHp;
   state.enemyActionCount = getEnemyActionInterval(enemy);
@@ -274,6 +279,7 @@ function runBattleTurn(action) {
     state.gp += enemy.reward;
     markEnemyCleared(getCurrentStage().id, enemy.key);
     pushLog(`${enemy.name}を撃破。${enemy.reward} GPを獲得。`);
+    gainExp(getEnemyExp(enemy));
     if (isStageCleared(getCurrentStage().id)) {
       pushLog(`${getCurrentStage().name} を全クリア。次のステージが解放されます。`);
     }
@@ -286,11 +292,13 @@ function runBattleTurn(action) {
   state.player.guard = false;
   saveState();
   render();
+  flushEffects();
 }
 
 function playerAction(action, enemy, stats) {
   if (action === "guard") {
     pushLog("防御体勢に入った。受けるダメージを軽減する。");
+    pendingEffects.push({ type: "guard" });
     return;
   }
   const baseDmg = calcDamage(stats.atk, enemy.def);
@@ -302,6 +310,7 @@ function playerAction(action, enemy, stats) {
   } else {
     pushLog(`あなたの攻撃: ${enemy.name}に ${dmg} ダメージ。`);
   }
+  pendingEffects.push({ type: "enemyHit", dmg, critical });
 }
 
 // luckyの値がそのままクリティカル発生率(%)になる（上限100%）
@@ -315,6 +324,7 @@ function enemyAction(enemy, stats) {
   const dmg = state.player.guard ? Math.max(1, Math.floor(raw * 0.45)) : raw;
   state.player.hp -= dmg;
   pushLog(`${enemy.name}の攻撃: あなたに ${dmg} ダメージ。`);
+  pendingEffects.push({ type: "playerHit", dmg, guarded: state.player.guard });
 }
 
 function tickEnemyAction(enemy, stats) {
@@ -325,6 +335,16 @@ function tickEnemyAction(enemy, stats) {
     return;
   }
   pushLog(`${enemy.name}は様子を見ている…（攻撃まで ${state.enemyActionCount}）`);
+}
+
+// 敵撃破時に得られる経験値。game-data.json の exp を優先し、未設定なら reward 値を使う。
+function getEnemyExp(enemy) {
+  const exp = Number(enemy?.exp);
+  if (Number.isFinite(exp) && exp >= 0) {
+    return Math.floor(exp);
+  }
+  const reward = Number(enemy?.reward);
+  return Number.isFinite(reward) && reward >= 0 ? Math.floor(reward) : 0;
 }
 
 function getEnemyActionInterval(enemy) {
@@ -341,25 +361,44 @@ function calcDamage(attackerAtk, defenderDef) {
   return Math.max(1, base + spread);
 }
 
-function upgradeStat(kind) {
-  checkAndHandleLocalTamper("local_storage_upgrade");
-  const costMap = { maxHp: 50, atk: 60, def: 60, lucky: 80 };
-  const cost = costMap[kind];
-  if (state.gp < cost) {
-    pushLog(`GP不足: ${kind} 強化には ${cost} GP 必要。`);
-    render();
+// 経験値を加算し、必要経験値に達していればレベルアップする。
+function gainExp(amount) {
+  const gained = Math.max(0, Math.floor(Number(amount) || 0));
+  if (gained <= 0) return;
+
+  if (state.player.level >= MAX_LEVEL) {
+    state.player.exp = 0;
+    pushLog(`経験値 +${gained}（最大レベル到達済み）`);
     return;
   }
-  state.gp -= cost;
-  if (kind === "maxHp") {
-    state.player.maxHp += 12;
-    state.player.hp += 12;
-  } else {
-    state.player[kind] += 2;
+
+  state.player.exp = (Number(state.player.exp) || 0) + gained;
+  pushLog(`経験値を ${gained} 獲得。`);
+
+  while (state.player.level < MAX_LEVEL) {
+    const need = expRequiredForLevel(state.player.level);
+    if (state.player.exp < need) break;
+    state.player.exp -= need;
+    levelUp();
   }
-  pushLog(`${kind} を強化した。`);
-  saveState();
-  render();
+
+  if (state.player.level >= MAX_LEVEL) {
+    state.player.exp = 0;
+  }
+}
+
+// レベルアップでステータスを強化する（GP消費なし）。
+function levelUp() {
+  state.player.level += 1;
+  state.player.maxHp += LEVEL_GROWTH.maxHp;
+  state.player.hp += LEVEL_GROWTH.maxHp;
+  state.player.atk += LEVEL_GROWTH.atk;
+  state.player.def += LEVEL_GROWTH.def;
+  state.player.lucky += LEVEL_GROWTH.lucky;
+  pushLog(
+    `🎉 レベルアップ！ Lv${state.player.level} になった。` +
+      `HP+${LEVEL_GROWTH.maxHp} ATK+${LEVEL_GROWTH.atk} DEF+${LEVEL_GROWTH.def} LUCKY+${LEVEL_GROWTH.lucky}`
+  );
 }
 
 const SHOP_SLOTS = [
@@ -458,6 +497,98 @@ function effectivePlayerStats() {
   return stats;
 }
 
+// render()でDOMを作り直した後に、ためておいた演出をまとめて再生する。
+function flushEffects() {
+  if (!pendingEffects.length) return;
+  const effects = pendingEffects;
+  pendingEffects = [];
+  effects.forEach((fx) => {
+    if (fx.type === "enemyHit") {
+      playEnemyHitEffect(fx.dmg, fx.critical);
+    } else if (fx.type === "playerHit") {
+      playPlayerHitEffect(fx.dmg, fx.guarded);
+    } else if (fx.type === "guard") {
+      playGuardEffect();
+    }
+  });
+}
+
+// 一定時間後に要素を取り除くヘルパー
+function removeAfter(el, ms) {
+  if (!el) return;
+  setTimeout(() => {
+    el.remove();
+  }, ms);
+}
+
+// 敵への攻撃命中演出（斬撃・被弾フラッシュ・シェイク・ダメージ数値）
+function playEnemyHitEffect(dmg, critical) {
+  const wrap = ui.enemyArea?.querySelector(".enemy-visual-wrap");
+  const image = ui.enemyArea?.querySelector(".enemy-image");
+  if (!wrap) return;
+
+  const slash = document.createElement("div");
+  slash.className = "fx-slash" + (critical ? " critical" : "");
+  wrap.appendChild(slash);
+  removeAfter(slash, critical ? 650 : 480);
+
+  if (critical) {
+    const burst = document.createElement("div");
+    burst.className = "fx-crit-burst";
+    burst.textContent = "CRITICAL!";
+    wrap.appendChild(burst);
+    removeAfter(burst, 900);
+  }
+
+  const hitTarget = image || wrap;
+  hitTarget.classList.remove("fx-hit-shake", "fx-hit-flash");
+  // リフローを挟んでアニメーションを確実に再スタートさせる
+  void hitTarget.offsetWidth;
+  hitTarget.classList.add("fx-hit-shake", "fx-hit-flash");
+  setTimeout(() => {
+    hitTarget.classList.remove("fx-hit-shake", "fx-hit-flash");
+  }, critical ? 600 : 450);
+
+  spawnDamageNumber(wrap, dmg, critical ? "enemy critical" : "enemy");
+}
+
+// プレイヤーの被弾演出（画面の赤フラッシュ・揺れ・ダメージ数値）
+function playPlayerHitEffect(dmg, guarded) {
+  const screen = document.querySelector(".battle-screen");
+  if (screen) {
+    screen.classList.remove("fx-screen-hit");
+    void screen.offsetWidth;
+    screen.classList.add("fx-screen-hit");
+    setTimeout(() => screen.classList.remove("fx-screen-hit"), 450);
+  }
+  const hpWrap = document.querySelector(".player-hp-wrap");
+  if (hpWrap) {
+    spawnDamageNumber(hpWrap, dmg, guarded ? "player guarded" : "player");
+  }
+}
+
+// 防御演出（プレイヤーHPバー周りに青いシールドフラッシュ）
+function playGuardEffect() {
+  const hpWrap = document.querySelector(".player-hp-wrap");
+  if (!hpWrap) return;
+  const shield = document.createElement("div");
+  shield.className = "fx-guard-shield";
+  hpWrap.appendChild(shield);
+  removeAfter(shield, 600);
+}
+
+// 指定要素の中央付近に、ふわっと浮き上がるダメージ数値を出す
+function spawnDamageNumber(container, dmg, variantClass) {
+  const num = document.createElement("div");
+  num.className = `fx-damage-number ${variantClass}`;
+  num.textContent = `-${dmg}`;
+  // 少しランダムに左右へずらして連打時の重なりを避ける
+  const offsetX = Math.floor(Math.random() * 40) - 20;
+  num.style.setProperty("--fx-x", `${offsetX}px`);
+  container.appendChild(num);
+  removeAfter(num, 900);
+}
+
 function hpBarColor(percent) {
   // 100% -> 緑 (hue 120), 0% -> 赤 (hue 0)
   const hue = Math.round(Math.max(0, Math.min(100, percent)) * 1.2);
@@ -471,6 +602,11 @@ function render() {
   if (ui.playerSummary) {
     const playerHp = Math.max(0, state.player.hp);
     const playerHpPercent = Math.max(0, Math.min(100, Math.round((playerHp / stats.maxHp) * 100)));
+    const atMaxLevel = state.player.level >= MAX_LEVEL;
+    const expNow = Math.max(0, Number(state.player.exp) || 0);
+    const expNeed = expRequiredForLevel(state.player.level);
+    const expPercent = atMaxLevel ? 100 : Math.max(0, Math.min(100, Math.round((expNow / expNeed) * 100)));
+    const expValueText = atMaxLevel ? "MAX" : `${expNow} / ${expNeed}`;
     const statRow = (label, value, max, cls) => {
       const percent = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
       return `
@@ -495,6 +631,11 @@ function render() {
             <span class="player-stat-label">HP</span>
             <div class="player-stat-bar"><div class="player-stat-fill hp" style="width: ${playerHpPercent}%; background: ${hpBarColor(playerHpPercent)};"></div></div>
             <span class="player-stat-value">${playerHp} / ${stats.maxHp}</span>
+          </div>
+          <div class="player-stat-row">
+            <span class="player-stat-label">EXP</span>
+            <div class="player-stat-bar"><div class="player-stat-fill exp" style="width: ${expPercent}%;"></div></div>
+            <span class="player-stat-value">${expValueText}</span>
           </div>
           ${statRow("ATK", stats.atk, 120, "atk")}
           ${statRow("DEF", stats.def, 120, "def")}
@@ -531,7 +672,7 @@ function render() {
           <div class="enemy-hp-text">HP: ${enemyHp} / ${enemy.maxHp}</div>
         </div>
         <div class="enemy-meta">ATK: ${enemy.atk} / DEF: ${enemy.def}</div>
-        撃破報酬: ${enemy.reward} GP
+        撃破報酬: ${enemy.reward} GP / EXP ${getEnemyExp(enemy)}
       </div>
     `;
   }
@@ -545,14 +686,14 @@ function render() {
   const stageCleared = isStageCleared(stage.id);
   const battleOngoing = state.enemyHp > 0 && state.player.hp > 0;
   if (ui.attackBtn) {
-    ui.attackBtn.disabled = stageCleared || !battleOngoing;
+    ui.attackBtn.disabled = !battleOngoing;
   }
   if (ui.guardBtn) {
-    ui.guardBtn.disabled = stageCleared || !battleOngoing;
+    ui.guardBtn.disabled = !battleOngoing;
   }
   if (ui.nextEnemyBtn) {
-    // 戦闘決着（敵撃破 or 敗北）まで押せない。全クリア後も不要なので無効化。
-    ui.nextEnemyBtn.disabled = stageCleared || battleOngoing;
+    // 戦闘決着（敵撃破 or 敗北）まで押せない。クリア後も周回できるよう有効のまま。
+    ui.nextEnemyBtn.disabled = battleOngoing;
   }
   if (ui.stageClearActions) {
     ui.stageClearActions.classList.toggle("visible", stageCleared);
@@ -568,8 +709,26 @@ function render() {
     ui.playerHpFill.style.background = hpBarColor(hpPercent);
     ui.playerHpText.textContent = `${hp} / ${stats.maxHp}`;
   }
+  renderGrowthInfo();
   renderShop();
   renderStageSelection();
+}
+
+function renderGrowthInfo() {
+  if (!ui.growthInfo) return;
+  const atMaxLevel = state.player.level >= MAX_LEVEL;
+  const expNow = Math.max(0, Number(state.player.exp) || 0);
+  const expNeed = expRequiredForLevel(state.player.level);
+  const remaining = atMaxLevel ? 0 : Math.max(0, expNeed - expNow);
+  ui.growthInfo.innerHTML = `
+    <p class="growth-lead">敵を倒して経験値を貯めると自動でレベルアップし、ステータスが強化されます。レベルが上がるほど次のレベルに必要な経験値は増加します。</p>
+    <div class="growth-stats">
+      <span class="growth-chip">現在 Lv ${state.player.level}${atMaxLevel ? "（MAX）" : ""}</span>
+      <span class="growth-chip">EXP ${atMaxLevel ? "MAX" : `${expNow} / ${expNeed}`}</span>
+      <span class="growth-chip">${atMaxLevel ? "最大レベル到達" : `次のレベルまで ${remaining}`}</span>
+    </div>
+    <p class="growth-bonus">レベルアップ毎の上昇: HP +${LEVEL_GROWTH.maxHp} / ATK +${LEVEL_GROWTH.atk} / DEF +${LEVEL_GROWTH.def} / LUCKY +${LEVEL_GROWTH.lucky}</p>
+  `;
 }
 
 function equipName(slot) {
@@ -829,8 +988,15 @@ function mergeStateWithDefaults(parsed, defaultState) {
     merged.selectedStage = 1;
   }
   const stage = stageTable.find((s) => s.id === merged.selectedStage) || stageTable[0];
-  const firstUncleared = getNextUnclearedEnemyIndex(stage.id, merged.stageClears);
-  merged.currentEnemyIndex = firstUncleared === -1 ? 0 : firstUncleared;
+  // 保存済みのインデックスが有効ならそのまま（周回中の位置を維持）。
+  // 無効な場合は未クリアの敵、無ければ先頭から。
+  const savedIdx = Number(parsed.currentEnemyIndex);
+  if (Number.isInteger(savedIdx) && savedIdx >= 0 && savedIdx < stage.enemies.length) {
+    merged.currentEnemyIndex = savedIdx;
+  } else {
+    const firstUncleared = getNextUnclearedEnemyIndex(stage.id, merged.stageClears);
+    merged.currentEnemyIndex = firstUncleared === -1 ? 0 : firstUncleared;
+  }
   const curEnemy = stage.enemies[merged.currentEnemyIndex];
   if (!Number.isFinite(merged.enemyHp) || merged.enemyHp <= 0 || merged.enemyHp > curEnemy.maxHp) {
     merged.enemyHp = curEnemy.maxHp;
@@ -873,16 +1039,6 @@ function onStageSelectionClick(event) {
   const battleBtn = event.target.closest("[data-battle-stage]");
   if (!battleBtn) return;
   const stageId = Number(battleBtn.dataset.battleStage);
-  if (!isStageUnlocked(stageId)) {
-    pushLog(`Stage ${stageId} はロック中です。前ステージを全クリアしてください。`);
-    render();
-    return;
-  }
-  if (isStageCleared(stageId)) {
-    pushLog(`Stage ${stageId} は全クリア済みのため再戦できません。`);
-    render();
-    return;
-  }
   selectStage(stageId);
   window.location.href = "/game-battle";
 }
@@ -892,8 +1048,8 @@ function selectStage(stageId) {
   const stage = stageTable.find((s) => s.id === stageId);
   if (!stage) return;
   state.selectedStage = stageId;
-  const nextIdx = getNextUnclearedEnemyIndex(stageId);
-  state.currentEnemyIndex = nextIdx === -1 ? 0 : nextIdx;
+  // 周回できるよう、ステージ選択時は常に先頭の敵から開始する。
+  state.currentEnemyIndex = 0;
   state.enemyHp = stage.enemies[state.currentEnemyIndex].maxHp;
   state.enemyActionCount = getEnemyActionInterval(stage.enemies[state.currentEnemyIndex]);
   state.player.hp = state.player.maxHp;
@@ -906,17 +1062,16 @@ function selectStage(stageId) {
 function renderStageSelection() {
   if (!ui.stageSelection) return;
   ui.stageSelection.innerHTML = stageTable.map((stage) => {
-    const unlocked = isStageUnlocked(stage.id);
     const cleared = getClearedCount(stage.id);
     const total = stage.enemies.length;
     const percent = Math.round((cleared / total) * 100);
     const clearedAll = cleared === total;
     const selected = stage.id === state.selectedStage;
     return `
-      <article class="stage-card stage-theme-${stage.id} ${unlocked ? "" : "locked"} ${selected ? "selected" : ""} ${clearedAll ? "cleared" : ""}">
+      <article class="stage-card stage-theme-${stage.id} ${selected ? "selected" : ""} ${clearedAll ? "cleared" : ""}">
         <div class="stage-card-head">
           <h3>${stage.name}</h3>
-          <span class="stage-status">${clearedAll ? "CLEAR" : (unlocked ? "OPEN" : "LOCK")}</span>
+          <span class="stage-status">${clearedAll ? "CLEAR" : "OPEN"}</span>
         </div>
         <p class="stage-desc">${stage.description}</p>
         <div class="stage-progress">
@@ -924,7 +1079,7 @@ function renderStageSelection() {
         </div>
         <p class="stage-count">${cleared}/${total} 体撃破</p>
         <div class="stage-card-actions">
-          <button data-battle-stage="${stage.id}" ${(unlocked && !clearedAll) ? "" : "disabled"}>このステージに挑戦</button>
+          <button data-battle-stage="${stage.id}">${clearedAll ? "周回する" : "このステージに挑戦"}</button>
         </div>
         ${clearedAll ? `<div class="stage-clear-aura" aria-hidden="true"></div>` : ""}
       </article>
@@ -944,14 +1099,8 @@ function markEnemyCleared(stageId, enemyKey) {
   }
 }
 
-function isStageUnlocked(stageId, clearState = state.stageClears) {
-  if (stageId === 1) return true;
-  for (let i = 1; i < stageId; i++) {
-    const stage = stageTable.find((s) => s.id === i);
-    if (!stage) return false;
-    const list = clearState[i] || [];
-    if (list.length < stage.enemies.length) return false;
-  }
+function isStageUnlocked() {
+  // 全ステージのロックを解除。いつでも挑戦・周回できる。
   return true;
 }
 
