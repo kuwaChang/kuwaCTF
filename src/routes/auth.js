@@ -175,8 +175,8 @@ router.post("/login", (req, res) => {
       if (err) {
         console.error("ログイン履歴テーブル作成エラー:", err);
       } else {
-        // テーブル作成成功後、今日の日付をYYYY-MM-DD形式で記録
-        const today = new Date().toISOString().split('T')[0];
+        // テーブル作成成功後、今日の日付(日本時間)をYYYY-MM-DD形式で記録
+        const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
         db.run(
           "INSERT OR IGNORE INTO login_logs (userid, login_date) VALUES (?, ?)",
           [userid, today],

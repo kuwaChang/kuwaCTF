@@ -13,6 +13,7 @@
           "def": 10,
           "actionInterval": 2,
           "reward": 60,
+          "exp": 40,
           "image": "/images/script_slime.png"
         },
         {
@@ -23,6 +24,7 @@
           "def": 15,
           "actionInterval": 2,
           "reward": 70,
+          "exp": 55,
           "image": "/images/log_hound.png"
         }
       ]
@@ -40,6 +42,7 @@
           "def": 15,
           "actionInterval": 2,
           "reward": 90,
+          "exp": 70,
           "image": "/images/port_goblin.png"
         },
         {
@@ -50,6 +53,7 @@
           "def": 15,
           "actionInterval": 2,
           "reward": 100,
+          "exp": 80,
           "image": "/images/header_bat.png"
         },
         {
@@ -60,6 +64,7 @@
           "def": 15,
           "actionInterval": 2,
           "reward": 110,
+          "exp": 90,
           "image": "/images/query_worm.png"
         }
       ]
@@ -77,6 +82,7 @@
           "def": 18,
           "actionInterval": 2,
           "reward": 140,
+          "exp": 110,
           "image": "/images/caesar_wisp.png"
         },
         {
@@ -87,6 +93,7 @@
           "def": 18,
           "actionInterval": 2,
           "reward": 155,
+          "exp": 125,
           "image": "/images/base64_mimic.png"
         },
         {
@@ -97,6 +104,7 @@
           "def": 21,
           "actionInterval": 2,
           "reward": 170,
+          "exp": 140,
           "image": "/images/hash_knight.png"
         }
       ]
@@ -114,6 +122,7 @@
           "def": 23,
           "actionInterval": 2,
           "reward": 210,
+          "exp": 170,
           "image": "/images/sql_injector.png"
         },
         {
@@ -124,6 +133,7 @@
           "def": 20,
           "actionInterval": 1.8,
           "reward": 225,
+          "exp": 185,
           "image": "/images/xss_phantom.png"
         },
         {
@@ -134,6 +144,7 @@
           "def": 27,
           "actionInterval": 2,
           "reward": 240,
+          "exp": 200,
           "image": "/images/buffer_ogre.png"
         },
         {
@@ -144,6 +155,7 @@
           "def": 24,
           "actionInterval": 1.8,
           "reward": 260,
+          "exp": 220,
           "image": "/images/session_reaper.png"
         }
       ]
@@ -161,6 +173,7 @@
           "def": 30,
           "actionInterval": 1.8,
           "reward": 320,
+          "exp": 270,
           "image": "/images/forensic_dragon.png"
         },
         {
@@ -171,6 +184,7 @@
           "def": 32,
           "actionInterval": 1.8,
           "reward": 350,
+          "exp": 300,
           "image": "/images/reverse_engineer.png"
         },
         {
@@ -181,6 +195,7 @@
           "def": 34,
           "actionInterval": 1.6,
           "reward": 390,
+          "exp": 340,
           "image": "/images/zero_day_demon.png"
         },
         {
@@ -191,6 +206,7 @@
           "def": 38,
           "actionInterval": 1.7,
           "reward": 450,
+          "exp": 400,
           "image": "/images/root_guardian.png"
         }
       ]

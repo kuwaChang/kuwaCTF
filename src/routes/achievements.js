@@ -65,6 +65,134 @@ function dbRun(query, params) {
   });
 }
 
+// 日本時間(JST, UTC+9)の日付文字列(YYYY-MM-DD)を返す（サーバーのタイムゾーンに依存しない）
+function getJstDateString(date = new Date()) {
+  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return jst.toISOString().split("T")[0];
+}
+
+// 指定時間幅(ミリ秒)のウィンドウ内で新規正解した最大問題数を返す（スピード系実績用）
+async function getMaxSolvesInWindow(userid, timeLimitMs) {
+  try {
+    const rows = await dbAll(
+      "SELECT created_at FROM answer_attempts WHERE userid = ? AND is_new_solve = 1 ORDER BY created_at ASC",
+      [userid]
+    );
+    const times = rows
+      .map((r) => new Date(r.created_at).getTime())
+      .filter((t) => !Number.isNaN(t))
+      .sort((a, b) => a - b);
+    let maxCount = 0;
+    let start = 0;
+    for (let end = 0; end < times.length; end++) {
+      while (times[end] - times[start] > timeLimitMs) start++;
+      const count = end - start + 1;
+      if (count > maxCount) maxCount = count;
+    }
+    return maxCount;
+  } catch (err) {
+    return 0;
+  }
+}
+
+// "YYYY-MM-DD" を比較用の通日（整数）に変換する
+function dayNumberFromDateString(ds) {
+  if (!ds) return NaN;
+  const [y, m, d] = String(ds).split("T")[0].split("-").map(Number);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+}
+
+// ログイン日付配列(YYYY-MM-DD)から、JSTの今日を起点とした連続ログイン日数を計算する
+function calcLoginStreak(dateStrings) {
+  if (!dateStrings || dateStrings.length === 0) return 0;
+  const todayNum = dayNumberFromDateString(getJstDateString());
+  // 重複を除いて降順ソート
+  const days = [...new Set(dateStrings.map(dayNumberFromDateString))]
+    .filter((n) => !Number.isNaN(n))
+    .sort((a, b) => b - a);
+  if (days.length === 0) return 0;
+  // 今日ログインしていなければ連続記録は0（既存仕様を踏襲）
+  if (days[0] !== todayNum) return 0;
+  let streak = 1;
+  let expected = todayNum - 1;
+  for (let i = 1; i < days.length; i++) {
+    if (days[i] === expected) {
+      streak++;
+      expected--;
+    } else if (days[i] < expected) {
+      break;
+    }
+  }
+  return streak;
+}
+
+// 連続正解数（最大連勝記録）を計算する
+// 新規正解を「勝ち」、不正解を「連勝リセット」とみなす。解答済み問題への再送信は無視する
+async function getMaxConsecutiveCorrect(userid) {
+  try {
+    const rows = await dbAll(
+      "SELECT correct, is_new_solve FROM answer_attempts WHERE userid = ? ORDER BY id ASC",
+      [userid]
+    );
+    let streak = 0;
+    let maxStreak = 0;
+    for (const row of rows) {
+      if (row.correct === 1 && row.is_new_solve === 1) {
+        streak++;
+        if (streak > maxStreak) maxStreak = streak;
+      } else if (row.correct === 0) {
+        streak = 0;
+      }
+      // 解答済みへの再送信(correct=1, is_new_solve=0)は連勝に影響させない
+    }
+    return maxStreak;
+  } catch (err) {
+    return 0;
+  }
+}
+
+// 今日新規に正解した「異なる問題」数（UTC基準）
+async function getDailySolveCount(userid) {
+  try {
+    const row = await dbGet(
+      "SELECT COUNT(DISTINCT category || '|' || qid) as count FROM answer_attempts WHERE userid = ? AND is_new_solve = 1 AND date(created_at, '+9 hours') = date('now', '+9 hours')",
+      [userid]
+    );
+    return row ? row.count : 0;
+  } catch (err) {
+    return 0;
+  }
+}
+
+// 今日挑戦した「異なる問題」数（正解・不正解を問わない／UTC基準）
+async function getDailyAttemptCount(userid) {
+  try {
+    const row = await dbGet(
+      "SELECT COUNT(DISTINCT category || '|' || qid) as count FROM answer_attempts WHERE userid = ? AND date(created_at, '+9 hours') = date('now', '+9 hours')",
+      [userid]
+    );
+    return row ? row.count : 0;
+  } catch (err) {
+    return 0;
+  }
+}
+
+// 「1発正解（ノーミス）」した問題があるか（=各問題の最初の解答が正解）。1以上で達成
+async function getFirstTrySolveCount(userid) {
+  try {
+    const row = await dbGet(
+      `SELECT COUNT(*) as count FROM answer_attempts a
+       JOIN (SELECT category, qid, MIN(id) AS minid FROM answer_attempts WHERE userid = ? GROUP BY category, qid) g
+         ON a.id = g.minid
+       WHERE a.correct = 1`,
+      [userid]
+    );
+    return row ? row.count : 0;
+  } catch (err) {
+    return 0;
+  }
+}
+
 // 実績の進捗を更新
 async function updateAchievementProgress(userid, achievementId, progress, maxProgress) {
   try {
@@ -217,60 +345,14 @@ async function checkAchievements(userid, eventType, eventData) {
           break;
 
         case "login_streak":
-          // 連続ログイン日数
+          // 連続ログイン日数（日本時間基準）
           if (eventData.logged_in) {
-            // ログイン履歴テーブルから連続日数を計算
-            // まず、usersテーブルにlast_loginカラムがあるか確認し、なければlogin_logsテーブルを使用
             try {
-              // login_logsテーブルから最新のログイン日を取得
               const loginRows = await dbAll(
                 "SELECT login_date FROM login_logs WHERE userid = ? ORDER BY login_date DESC",
                 [userid]
               );
-              
-              let streak = 0;
-              if (loginRows.length > 0) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                let expectedDate = new Date(today);
-                let foundToday = false;
-                
-                // 今日ログインしているか確認
-                for (const row of loginRows) {
-                  const loginDate = new Date(row.login_date);
-                  loginDate.setHours(0, 0, 0, 0);
-                  
-                  if (loginDate.getTime() === today.getTime()) {
-                    foundToday = true;
-                    streak = 1;
-                    expectedDate = new Date(today);
-                    expectedDate.setDate(expectedDate.getDate() - 1);
-                    break;
-                  }
-                }
-                
-                // 連続日数を計算
-                if (foundToday) {
-                  for (let i = foundToday ? 1 : 0; i < loginRows.length; i++) {
-                    const loginDate = new Date(loginRows[i].login_date);
-                    loginDate.setHours(0, 0, 0, 0);
-                    
-                    if (loginDate.getTime() === expectedDate.getTime()) {
-                      streak++;
-                      expectedDate.setDate(expectedDate.getDate() - 1);
-                    } else if (loginDate < expectedDate) {
-                      // 連続が途切れた
-                      break;
-                    }
-                  }
-                }
-              } else {
-                // 初回ログイン
-                streak = 1;
-              }
-              
-              progress = streak;
+              progress = calcLoginStreak(loginRows.map((r) => r.login_date));
               maxProgress = achievement.condition.days;
               const result = await updateAchievementProgress(userid, achievementId, progress, maxProgress);
               if (result.unlocked) {
@@ -337,6 +419,79 @@ async function checkAchievements(userid, eventType, eventData) {
           if (eventData.cheat_detected) {
             progress = 1;
             maxProgress = achievement.condition?.count || 1;
+            const result = await updateAchievementProgress(userid, achievementId, progress, maxProgress);
+            if (result.unlocked) {
+              unlockedAchievements.push(achievement);
+            }
+          }
+          break;
+
+        case "open_modal":
+          // 初めて問題モーダルを開いた（1回で解除）
+          if (eventData.opened) {
+            progress = 1;
+            maxProgress = achievement.condition?.count || 1;
+            const result = await updateAchievementProgress(userid, achievementId, progress, maxProgress);
+            if (result.unlocked) {
+              unlockedAchievements.push(achievement);
+            }
+          }
+          break;
+
+        case "consecutive_correct":
+          // 連続正解（最大連勝記録で判定）
+          if (eventData.solved) {
+            progress = await getMaxConsecutiveCorrect(userid);
+            maxProgress = achievement.condition.count;
+            const result = await updateAchievementProgress(userid, achievementId, progress, maxProgress);
+            if (result.unlocked) {
+              unlockedAchievements.push(achievement);
+            }
+          }
+          break;
+
+        case "daily_solve":
+          // 1日の正解数（異なる問題）
+          if (eventData.solved) {
+            progress = await getDailySolveCount(userid);
+            maxProgress = achievement.condition.count;
+            const result = await updateAchievementProgress(userid, achievementId, progress, maxProgress);
+            if (result.unlocked) {
+              unlockedAchievements.push(achievement);
+            }
+          }
+          break;
+
+        case "daily_attempt":
+          // 1日の挑戦数（異なる問題）
+          if (eventData.attempted) {
+            progress = await getDailyAttemptCount(userid);
+            maxProgress = achievement.condition.count;
+            const result = await updateAchievementProgress(userid, achievementId, progress, maxProgress);
+            if (result.unlocked) {
+              unlockedAchievements.push(achievement);
+            }
+          }
+          break;
+
+        case "no_miss":
+          // ノーミス（1発正解）した問題があれば解除
+          if (eventData.solved) {
+            progress = (await getFirstTrySolveCount(userid)) > 0 ? 1 : 0;
+            maxProgress = achievement.condition?.count || 1;
+            const result = await updateAchievementProgress(userid, achievementId, progress, maxProgress);
+            if (result.unlocked) {
+              unlockedAchievements.push(achievement);
+            }
+          }
+          break;
+
+        case "speed_solve":
+          // 制限時間内に指定問題数を解く
+          if (eventData.solved) {
+            const timeLimit = achievement.condition.time_limit || 3600000;
+            progress = await getMaxSolvesInWindow(userid, timeLimit);
+            maxProgress = achievement.condition.count;
             const result = await updateAchievementProgress(userid, achievementId, progress, maxProgress);
             if (result.unlocked) {
               unlockedAchievements.push(achievement);
@@ -443,53 +598,13 @@ router.get("/list", requireLogin, async (req, res) => {
           break;
 
         case "login_streak":
-          // 連続ログイン日数の計算
+          // 連続ログイン日数の計算（日本時間基準）
           try {
             const loginRows = await dbAll(
               "SELECT login_date FROM login_logs WHERE userid = ? ORDER BY login_date DESC",
               [userid]
             );
-            
-            let streak = 0;
-            if (loginRows.length > 0) {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              
-              let expectedDate = new Date(today);
-              let foundToday = false;
-              
-              // 今日ログインしているか確認
-              for (const row of loginRows) {
-                const loginDate = new Date(row.login_date);
-                loginDate.setHours(0, 0, 0, 0);
-                
-                if (loginDate.getTime() === today.getTime()) {
-                  foundToday = true;
-                  streak = 1;
-                  expectedDate = new Date(today);
-                  expectedDate.setDate(expectedDate.getDate() - 1);
-                  break;
-                }
-              }
-              
-              // 連続日数を計算
-              if (foundToday) {
-                for (let i = 1; i < loginRows.length; i++) {
-                  const loginDate = new Date(loginRows[i].login_date);
-                  loginDate.setHours(0, 0, 0, 0);
-                  
-                  if (loginDate.getTime() === expectedDate.getTime()) {
-                    streak++;
-                    expectedDate.setDate(expectedDate.getDate() - 1);
-                  } else if (loginDate < expectedDate) {
-                    // 連続が途切れた
-                    break;
-                  }
-                }
-              }
-            }
-            
-            progress = streak;
+            progress = calcLoginStreak(loginRows.map((r) => r.login_date));
             maxProgress = achievement.condition.days;
           } catch (err) {
             // テーブルが存在しない場合は進捗0のまま
@@ -546,6 +661,36 @@ router.get("/list", requireLogin, async (req, res) => {
         case "rpg_cheat":
           progress = userAchievements[id]?.progress || 0;
           maxProgress = achievement.condition?.count || 1;
+          break;
+
+        case "open_modal":
+          progress = userAchievements[id]?.progress || 0;
+          maxProgress = achievement.condition?.count || 1;
+          break;
+
+        case "consecutive_correct":
+          progress = await getMaxConsecutiveCorrect(userid);
+          maxProgress = achievement.condition.count;
+          break;
+
+        case "daily_solve":
+          progress = await getDailySolveCount(userid);
+          maxProgress = achievement.condition.count;
+          break;
+
+        case "daily_attempt":
+          progress = await getDailyAttemptCount(userid);
+          maxProgress = achievement.condition.count;
+          break;
+
+        case "no_miss":
+          progress = (await getFirstTrySolveCount(userid)) > 0 ? 1 : 0;
+          maxProgress = achievement.condition?.count || 1;
+          break;
+
+        case "speed_solve":
+          progress = await getMaxSolvesInWindow(userid, achievement.condition.time_limit || 3600000);
+          maxProgress = achievement.condition.count;
           break;
       }
       
