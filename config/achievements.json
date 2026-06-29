@@ -1,4 +1,82 @@
-{
+{ 
+  "win_streak_3": {
+    "id": "win_streak_3",
+    "title": "3連勝",
+    "description": "3問連続で正解する",
+    "icon": "🔥",
+    "category": "skill",
+    "type": "consecutive_correct",
+    "condition": {
+      "count": 3
+    },
+    "points": 30,
+    "hidden": false
+  },
+  "no_miss_clear": {
+    "id": "no_miss_clear",
+    "title": "ノーミス突破",
+    "description": "問題を1発で正解する（ミスなし）",
+    "icon": "🎯",
+    "category": "skill",
+    "type": "no_miss",
+    "condition": {
+      "count": 1
+    },
+    "points": 20,
+    "hidden": false
+  },
+  "daily_effort": {
+    "id": "daily_effort",
+    "title": "今日の努力家",
+    "description": "1日に3問正解する",
+    "icon": "📚",
+    "category": "study",
+    "type": "daily_solve",
+    "condition": {
+      "count": 3
+    },
+    "points": 30,
+    "hidden": false
+  },
+  "login_streak_3": {
+    "id": "login_streak_3",
+    "title": "継続は力なり",
+    "description": "3日連続でログインする",
+    "icon": "📆",
+    "category": "streak",
+    "type": "login_streak",
+    "condition": {
+      "days": 3
+    },
+    "points": 20,
+    "hidden": false
+  },
+  "ctf_addict": {
+    "id": "ctf_addict",
+    "title": "CTF中毒",
+    "description": "1日に10問挑戦する",
+    "icon": "🎮",
+    "category": "study",
+    "type": "daily_attempt",
+    "condition": {
+      "count": 10
+    },
+    "points": 40,
+    "hidden": false
+  },
+  "first_modal_open": {
+    "id": "first_modal_open",
+    "title": "好奇心の扉",
+    "description": "初めて問題を開いた",
+    "icon": "🚪",
+    "category": "beginner",
+    "type": "open_modal",
+    "condition": {
+      "count": 1
+    },
+    "points": 5,
+    "hidden": false
+  },
   "first_steps": {
     "id": "first_steps",
     "title": "最初の一歩",
@@ -10,6 +88,76 @@
       "count": 1
     },
     "points": 10,
+    "hidden": false
+  },
+  "web_beginner": {
+    "id": "web_beginner",
+    "title": "Web入門者",
+    "description": "Webカテゴリを1問正解",
+    "icon": "🌐",
+    "category": "web",
+    "type": "category_solve",
+    "condition": {
+      "category": "web",
+      "count": 1
+    },
+    "points": 10,
+    "hidden": false
+  },
+  "crypto_apprentice": {
+    "id": "crypto_apprentice",
+    "title": "Crypto見習い",
+    "description": "Cryptoカテゴリを1問正解",
+    "icon": "🔐",
+    "category": "crypto",
+    "type": "category_solve",
+    "condition": {
+      "category": "crypto",
+      "count": 1
+    },
+    "points": 10,
+    "hidden": false
+  },
+  "forensics_investigator": {
+    "id": "forensics_investigator",
+    "title": "Forensics調査員",
+    "description": "Forensicsカテゴリを1問正解",
+    "icon": "🔍",
+    "category": "forensics",
+    "type": "category_solve",
+    "condition": {
+      "category": "forensics",
+      "count": 1
+    },
+    "points": 10,
+    "hidden": false
+  },
+  "osint_detective": {
+    "id": "osint_detective",
+    "title": "OSINT探偵",
+    "description": "OSINTカテゴリを1問正解",
+    "icon": "🕵️",
+    "category": "osint",
+    "type": "category_solve",
+    "condition": {
+      "category": "osint",
+      "count": 1
+    },
+    "points": 10,
+    "hidden": false
+  },
+  "osint_master": {
+    "id": "osint_master",
+    "title": "情報収集の達人",
+    "description": "OSINTカテゴリを5問正解",
+    "icon": "🛰️",
+    "category": "osint",
+    "type": "category_solve",
+    "condition": {
+      "category": "osint",
+      "count": 5
+    },
+    "points": 50,
     "hidden": false
   },
   "crypto_master": {
@@ -106,6 +254,19 @@
     "points": 30,
     "hidden": false
   },
+  "perfect_month": {
+    "id": "perfect_month",
+    "title": "皆勤の一ヶ月",
+    "description": "30日連続でログイン",
+    "icon": "🗓️",
+    "category": "streak",
+    "type": "login_streak",
+    "condition": {
+      "days": 30
+    },
+    "points": 100,
+    "hidden": false
+  },
   "study_marathon": {
     "id": "study_marathon",
     "title": "学習マラソン",
@@ -131,6 +292,34 @@
       "time_limit": 3600000
     },
     "points": 60,
+    "hidden": false
+  },
+  "speed_solver_10": {
+    "id": "speed_solver_10",
+    "title": "スピードスター",
+    "description": "1時間以内に10問解く",
+    "icon": "💨",
+    "category": "speed",
+    "type": "speed_solve",
+    "condition": {
+      "count": 10,
+      "time_limit": 3600000
+    },
+    "points": 80,
+    "hidden": false
+  },
+  "speed_solver_15": {
+    "id": "speed_solver_15",
+    "title": "最高速度でぶち抜いたる",
+    "description": "1時間以内に15問解く",
+    "icon": "🚀",
+    "category": "speed",
+    "type": "speed_solve",
+    "condition": {
+      "count": 15,
+      "time_limit": 3600000
+    },
+    "points": 120,
     "hidden": false
   },
   "all_categories": {

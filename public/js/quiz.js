@@ -3,6 +3,7 @@ let solvedList = [];
 let currentCategory = null;
 let currentQid = null;
 let currentPoint = 0;
+let firstModalChecked = false;
 
 /** 難易度別タブに出すストレージキー（ストーリー／サブシステム単位）。WEB 等のジャンル専用ブロックは含めない */
 const DIFFICULTY_SECTION_ORDER = [
@@ -638,7 +639,45 @@ function openModal(category, qid, evt = null) {
     modalContent.classList.add("visible");
   });
 
+  // 初めて問題モーダルを開いた実績をチェック（セッション中は1回だけ送信）
+  if (!firstModalChecked) {
+    firstModalChecked = true;
+    checkOpenModalAchievement();
+  }
+
   //console.log(`📝 openModal: ${category} - ${qid}`);
+}
+
+// 「初めて問題を開いた」実績チェックと解除通知
+async function checkOpenModalAchievement() {
+  try {
+    const res = await fetch("/achievements/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventType: "open_modal",
+        eventData: { opened: true }
+      }),
+      credentials: "include"
+    });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.unlocked || data.unlocked.length === 0) return;
+
+    // 解除された実績の詳細を取得して通知を表示
+    const listRes = await fetch("/achievements/list", { credentials: "include" });
+    if (!listRes.ok) return;
+    const achievements = await listRes.json();
+    const { showAchievementUnlocked } = await import("./achievements.js");
+    for (const id of data.unlocked) {
+      if (achievements[id]) {
+        showAchievementUnlocked(achievements[id]);
+      }
+    }
+  } catch (err) {
+    console.error("モーダル実績チェックエラー:", err);
+  }
 }
 
 export function closeModal() {
@@ -806,6 +845,8 @@ console.log("📡 /checkAnswer応答:", res.status);
   if (data.alreadySolved) {
     resultEl.className = "warn";
     resultEl.textContent = "この問題はすでに解いています！";
+    // 既解答でも「挑戦」として実績が解除される場合があるためチェック
+    notifyRecentlyUnlockedAchievements();
   } else if (data.correct) {
     const msg = (data.message && String(data.message).trim()) || "正解！";
     resultEl.className = "success result-correct-bounce";
@@ -823,33 +864,38 @@ console.log("📡 /checkAnswer応答:", res.status);
     }
     
     // 実績チェック（少し遅延させてサーバー側の処理を待つ）
-    setTimeout(async () => {
-      try {
-        const achievementsRes = await fetch("/achievements/list", { credentials: "include" });
-        if (achievementsRes.ok) {
-          const achievements = await achievementsRes.json();
-          // 新しく解除された実績を検出
-          for (const [id, achievement] of Object.entries(achievements)) {
-            if (achievement.unlocked && achievement.unlockedAt) {
-              const unlockDate = new Date(achievement.unlockedAt);
-              const now = new Date();
-              // 5秒以内に解除された実績のみ通知（重複通知を防ぐ）
-              if (now - unlockDate < 5000) {
-                const { showAchievementUnlocked } = await import("./achievements.js");
-                showAchievementUnlocked(achievement);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error("実績チェックエラー:", err);
-      }
-    }, 500);
+    notifyRecentlyUnlockedAchievements();
   } else {
     resultEl.className = "error";
     resultEl.textContent = "不正解...";
+    // 不正解でも「挑戦」系の実績が解除される場合があるためチェック
+    notifyRecentlyUnlockedAchievements();
   }
 });
+
+// 直近で解除された実績を取得して通知を表示する（サーバー処理を待つため少し遅延）
+function notifyRecentlyUnlockedAchievements() {
+  setTimeout(async () => {
+    try {
+      const achievementsRes = await fetch("/achievements/list", { credentials: "include" });
+      if (!achievementsRes.ok) return;
+      const achievements = await achievementsRes.json();
+      const { showAchievementUnlocked } = await import("./achievements.js");
+      // 新しく解除された実績を検出（5秒以内に解除されたもののみ通知）
+      for (const [id, achievement] of Object.entries(achievements)) {
+        if (achievement.unlocked && achievement.unlockedAt) {
+          const unlockDate = new Date(achievement.unlockedAt);
+          const now = new Date();
+          if (now - unlockDate < 5000) {
+            showAchievementUnlocked(achievement);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("実績チェックエラー:", err);
+    }
+  }, 500);
+}
 
 // ✅ ミリ秒を読みやすい形式に変換
 function formatStudyTime(ms) {

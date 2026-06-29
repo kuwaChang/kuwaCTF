@@ -176,11 +176,16 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
         return res.status(500).json({ message: "DBエラー" });
       }
       if (row) {
+        // 既に解答済みでも「挑戦」としてログに残す（CTF中毒の日次挑戦カウント用）
+        logAnswerAttempt(userid, category, qid, true, false);
         return res.json({ correct: true, alreadySolved: true, message: "既に解答済みです" });
       }
 
       // スコア更新と実績チェックを実行する関数
       const executeScoreUpdateAndAchievementCheck = () => {
+        // 新規正解を解答ログに記録（連続正解・日次正解・ノーミス判定用）
+        logAnswerAttempt(userid, category, qid, true, true);
+
         db.run("UPDATE users SET score = score + ? WHERE userid = ?", [point, userid], (err) => {
           if (err) {
             console.error("DB update error:", err);
@@ -227,6 +232,18 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
               })
               .catch(err => console.error("実績チェックエラー:", err));
           }
+
+          // 解答ログ系の実績チェック（連続正解・日次正解・1日の挑戦数・ノーミス）
+          checkAchievements(userid, "consecutive_correct", { solved: true })
+            .catch(err => console.error("実績チェックエラー:", err));
+          checkAchievements(userid, "daily_solve", { solved: true })
+            .catch(err => console.error("実績チェックエラー:", err));
+          checkAchievements(userid, "daily_attempt", { attempted: true })
+            .catch(err => console.error("実績チェックエラー:", err));
+          checkAchievements(userid, "no_miss", { solved: true, category, qid })
+            .catch(err => console.error("実績チェックエラー:", err));
+          checkAchievements(userid, "speed_solve", { solved: true })
+            .catch(err => console.error("実績チェックエラー:", err));
           
           // スコア実績チェック
           db.get("SELECT score FROM users WHERE userid = ?", [userid], (err, scoreRow) => {
@@ -282,6 +299,14 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
       });
     });
   } else {
+    // 不正解も「挑戦」としてログに記録（CTF中毒の日次挑戦カウント用）
+    logAnswerAttempt(userid, category, qid, false, false);
+
+    // 1日の挑戦数の実績チェック（不正解でも挑戦としてカウント）
+    const { checkAchievements } = require("./achievements");
+    checkAchievements(userid, "daily_attempt", { attempted: true })
+      .catch(err => console.error("実績チェックエラー:", err));
+
     res.json({ correct: false, message: "不正解..." });
   }
 });
@@ -300,6 +325,35 @@ db.run(`CREATE TABLE IF NOT EXISTS hint_opened (
     console.log("✅ hint_openedテーブル確認/作成完了");
   }
 });
+
+// 解答ログテーブルを作成（連続正解・日次正解/挑戦・ノーミス判定用）
+// 正解・不正解を問わず、全ての解答送信を1行ずつ記録する
+db.run(`CREATE TABLE IF NOT EXISTS answer_attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  userid TEXT NOT NULL,
+  category TEXT NOT NULL,
+  qid TEXT NOT NULL,
+  correct INTEGER NOT NULL DEFAULT 0,
+  is_new_solve INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+)`, (err) => {
+  if (err) {
+    console.error("answer_attemptsテーブル作成エラー:", err);
+  } else {
+    console.log("✅ answer_attemptsテーブル確認/作成完了");
+  }
+});
+
+// 解答ログを記録するヘルパー
+function logAnswerAttempt(userid, category, qid, correct, isNewSolve) {
+  db.run(
+    "INSERT INTO answer_attempts (userid, category, qid, correct, is_new_solve, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+    [userid, category, qid, correct ? 1 : 0, isNewSolve ? 1 : 0, new Date().toISOString()],
+    (err) => {
+      if (err) console.error("解答ログ記録エラー:", err);
+    }
+  );
+}
 
 // 解いた問題一覧
 router.get("/solvedList", requireLogin, (req, res) => {

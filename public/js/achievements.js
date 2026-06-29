@@ -31,8 +31,20 @@ function displayAchievements(achievements) {
     categories[category].push({ id, ...achievement });
   }
 
+  // 表示順を決定する: 初心者 → カテゴリー別(Web/暗号/フォレンジック/OSINT) → それ以外
+  const PRIORITY_ORDER = ["beginner", "web", "crypto", "forensics", "osint"];
+  const orderedCategories = Object.keys(categories).sort((a, b) => {
+    const ia = PRIORITY_ORDER.indexOf(a);
+    const ib = PRIORITY_ORDER.indexOf(b);
+    // 優先リストにあるものは指定順、ないものはその後ろ（元の並び順を維持）
+    const ra = ia === -1 ? PRIORITY_ORDER.length : ia;
+    const rb = ib === -1 ? PRIORITY_ORDER.length : ib;
+    return ra - rb;
+  });
+
   // カテゴリーごとに表示
-  for (const [category, items] of Object.entries(categories)) {
+  for (const category of orderedCategories) {
+    const items = categories[category];
     const categoryDiv = document.createElement("div");
     categoryDiv.className = "achievement-category";
     categoryDiv.style.marginBottom = "30px";
@@ -72,6 +84,7 @@ function getCategoryName(category) {
     "crypto": "暗号",
     "forensics": "フォレンジック",
     "web": "Web",
+    "osint": "OSINT",
     "milestone": "マイルストーン",
     "streak": "連続記録",
     "study": "学習",
