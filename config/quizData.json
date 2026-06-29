@@ -613,8 +613,7 @@
       ],
       "point": 30,
       "files": [],
-      "url": "http://localhost:3333/web/header-flag",
-      "explanation": "解説ページのURLを入力してください"
+      "url": "http://localhost:3333/web/header-flag"
     },
     "web7": {
       "answer": "FLAG{modify_request_headers}",
@@ -629,8 +628,7 @@
       ],
       "point": 40,
       "files": [],
-      "url": "http://localhost:3333/web/request-header-flag",
-      "explanation": "解説ページのURLを入力してください"
+      "url": "http://localhost:3333/web/request-header-flag"
     },
     "web8": {
       "answer": "FLAG{check_html_comments}",
@@ -645,8 +643,7 @@
       ],
       "point": 25,
       "files": [],
-      "url": "http://localhost:3333/web/comment-flag",
-      "explanation": "解説ページのURLを入力してください"
+      "url": "http://localhost:3333/web/comment-flag"
     },
     "web9": {
       "answer": "FLAG{check_etag_header}",
@@ -661,8 +658,7 @@
       ],
       "point": 35,
       "files": [],
-      "url": "http://localhost:3333/web/etag-flag",
-      "explanation": "解説ページのURLを入力してください"
+      "url": "http://localhost:3333/web/etag-flag"
     },
     "web10": {
       "answer": "FLAG{xss_attack_success}",
@@ -670,17 +666,11 @@
       "categoryId": "web",
       "desc": "以下のフォーラムページで実際にXSS攻撃をしてみよう。\n投稿内容にスクリプトを注入して、攻撃成功ページ（/xss/attack-success）にリダイレクトさせることができれば成功です。\n\n⚠️ このページは学習目的で作成されています。実際のWebアプリケーションでは絶対にこのような実装をしないでください。",
       "hint": [
-        "基本的なXSS: <script>alert('XSS')</script>",
-        "リダイレクト攻撃: <script>window.location.href='/xss/attack-success'</script>",
-        "イベントハンドラでリダイレクト: <img src=x onerror=\"location='/xss/attack-success'\">",
-        "投稿内容がそのまま表示されることを確認してみましょう",
-        "投稿一覧でスクリプトが実行され、攻撃成功ページにリダイレクトされることを確認してください",
-        "攻撃成功ページにフラグが表示されます"
       ],
       "point": 50,
       "files": [],
       "url": "http://localhost:3333/html/xss_index.html",
-      "explanation": "解説ページのURLを入力してください"
+      "explanation": "http://localhost:3333/xss_explanation"
     },
     "web11": {
       "answer": "FLAG{test_attack_XSS}",
@@ -694,7 +684,7 @@
       "point": 50,
       "files": [],
       "url": "http://localhost:3333/shop",
-      "explanation": "解説ページのURLを入力してください"
+      "explanation": "http://localhost:3333/xss_explanation"
     },
     "web12": {
       "answer": "FLAG{これがパストラバーサル}",
@@ -705,7 +695,7 @@
       "point": 50,
       "files": [],
       "url": "http://localhost:3333/html/path-traversal_index.html",
-      "explanation": "解説ページのURLを入力してください"
+      "explanation": "http://localhost:3333/path-traversal_explanation"
     }
   },
   "Forensics": {
@@ -718,8 +708,7 @@
         "ステガノグラフィーツールを使ってみよう"
       ],
       "point": 40,
-      "files": [],
-      "explanation": "解説ページのURLを入力してください"
+      "files": []
     }
   },
   "Crypto": {
@@ -732,8 +721,7 @@
         "hint"
       ],
       "point": 10,
-      "files": [],
-      "explanation": "解説ページのURLを入力してください"
+      "files": []
     },
     "crypto2": {
       "answer": "FLAG{crypto2}",
@@ -744,8 +732,7 @@
         "hint"
       ],
       "point": 20,
-      "files": [],
-      "explanation": "解説ページのURLを入力してください"
+      "files": []
     },
     "crypto3": {
       "answer": "FLAG{crypto3}",
@@ -756,8 +743,7 @@
         "hint"
       ],
       "point": 50,
-      "files": [],
-      "explanation": "解説ページのURLを入力してください"
+      "files": []
     },
     "crypto4": {
       "answer": "FLAG{crypto4}",
@@ -766,8 +752,7 @@
       "desc": "desc",
       "hint": [],
       "point": 60,
-      "files": [],
-      "explanation": "解説ページのURLを入力してください"
+      "files": []
     }
   },
   "OSINT": {
@@ -783,8 +768,7 @@
       ],
       "point": 50,
       "files": [],
-      "answerType": "flag",
-      "explanation": "解説ページのURLを入力してください"
+      "answerType": "flag"
     },
     "osint2": {
       "answer": "35.6812,139.7671",
@@ -799,8 +783,7 @@
       "point": 60,
       "files": [],
       "answerType": "coordinates",
-      "coordinateTolerance": 0.001,
-      "explanation": "解説ページのURLを入力してください"
+      "coordinateTolerance": 0.001
     }
   },
   "sad server": {
@@ -816,8 +799,7 @@
       ],
       "point": 10,
       "files": [],
-      "scenarioId": "easy1",
-      "explanation": "解説ページのURLを入力してください"
+      "scenarioId": "easy1"
     },
     "easy2": {
       "answer": "FLAG{easy_flag_2}",
@@ -832,8 +814,7 @@
       ],
       "point": 15,
       "files": [],
-      "scenarioId": "easy2",
-      "explanation": "解説ページのURLを入力してください"
+      "scenarioId": "easy2"
     },
     "medium1": {
       "answer": "FLAG{medium_flag}",
@@ -848,8 +829,7 @@
       ],
       "point": 20,
       "files": [],
-      "scenarioId": "medium",
-      "explanation": "解説ページのURLを入力してください"
+      "scenarioId": "medium"
     },
     "hard1": {
       "answer": "FLAG{hard_flag}",
@@ -868,8 +848,7 @@
       ],
       "point": 30,
       "files": [],
-      "scenarioId": "hard",
-      "explanation": "解説ページのURLを入力してください"
+      "scenarioId": "hard"
     },
     "test1": {
       "answer": "FLAG{test1}",
@@ -881,8 +860,7 @@
       ],
       "point": 30,
       "files": [],
-      "scenarioId": "test1",
-      "explanation": "解説ページのURLを入力してください"
+      "scenarioId": "test1"
     }
   },
   "osint": {

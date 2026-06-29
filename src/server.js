@@ -421,7 +421,9 @@ const LEGACY_HTML_REDIRECTS = {
   "flag-hidden.html": "/flag-hidden",
   "sql_index.html": "/sql",
   "xss_index.html": "/xss",
+  "xss_explanation.html": "/xss_explanation",
   "path-traversal_index.html": "/path-traversal",
+  "path-traversal_explanation.html": "/path-traversal_explanation",
 };
 app.get("/html/:file", (req, res, next) => {
   const target = LEGACY_HTML_REDIRECTS[req.params.file];
@@ -603,6 +605,11 @@ app.get(["/sql", "/sql_index", "/sqli"], (_req, res) => {
 // XSS練習用ページ
 app.get(["/xss", "/xss_index"], (_req, res) => {
 	res.sendFile(path.join(paths.VIEWS, "pages", "xss_index.html"));
+});
+
+// XSS説明ページ
+app.get("/xss_explanation", (_req, res) => {
+	res.sendFile(path.join(paths.VIEWS, "pages", "xss_explanation.html"));
 });
 
 // XSS攻撃成功ページ（リダイレクト先）
@@ -1246,6 +1253,10 @@ app.get(["/path-traversal", "/path-traversal_index", "/pt"], (_req, res) => {
   res.sendFile(path.join(paths.VIEWS, "pages", "path-traversal_index.html"));
 });
 
+// パストラバーサル説明ページ
+app.get("/path-traversal_explanation", (_req, res) => {
+	res.sendFile(path.join(paths.VIEWS, "pages", "path-traversal_explanation.html"));
+});
 // セキュリティ: ファイル名とカテゴリ名のサニタイゼーション関数
 function sanitizePathComponent(component) {
   if (typeof component !== 'string') return '';

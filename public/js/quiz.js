@@ -549,9 +549,15 @@ function openModal(category, qid, evt = null) {
   modalContent.style.borderStyle = "solid";
   modalContent.style.borderColor = "rgb(242 242 242 / 30%)";
 
-  // 解説リンクの初期化
+  // 解説リンクの表示（正解前でも表示）
   const explanationLink = document.getElementById("explanation-link");
-  explanationLink.style.display = "none";
+  if (q.explanation) {
+    const explanationAnchor = document.getElementById("explanation-link-anchor");
+    explanationAnchor.href = q.explanation;
+    explanationLink.style.display = "block";
+  } else {
+    explanationLink.style.display = "none";
+  }
 
   // 解答フィードバック（正解/不正解表示）をリセット
   const resultFeedback = document.getElementById("result");
@@ -623,12 +629,6 @@ function openModal(category, qid, evt = null) {
   const solved = solvedList.some(s => s.category === category && s.qid === qid);
   if (solved) {
     modalContent.style.borderColor = "#6cd463";
-    // 解説がある場合はリンクを表示
-    if (q.explanation) {
-      const explanationAnchor = document.getElementById("explanation-link-anchor");
-      explanationAnchor.href = q.explanation;
-      explanationLink.style.display = "block";
-    }
   }
   modalContent.classList.remove("visible");
   modalContent.style.top = "";

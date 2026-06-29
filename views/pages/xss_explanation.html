@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>XSS攻撃の仕組みと対策</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      line-height: 1.8;
+      margin: 40px;
+      background-color: #f7f7f7;
+      color: #222;
+    }
+
+    h1, h2, h3 {
+      color: #1f4e79;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.08);
+    }
+
+    code {
+      background: #272822;
+      color: #ffe730;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: #272822;
+      color: #ffe730;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    .warning {
+      background: #fff3cd;
+      border-left: 6px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+    }
+
+    .point {
+      background: #e8f4ff;
+      border-left: 6px solid #1f78c1;
+      padding: 15px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>XSS攻撃の仕組みと対策</h1>
+
+    <h2>XSSとは</h2>
+    <p>
+      XSSとは、Cross-Site Scriptingの略で、Webサイトに悪意のあるスクリプトを埋め込み、
+      そのページを見た利用者のブラウザ上で実行させる攻撃です。
+    </p>
+
+    <p>
+      本来、Webサイトはユーザーが入力した文字を「文字列」として表示するべきですが、
+      処理が不十分だと、入力内容がHTMLやJavaScriptとして解釈されてしまうことがあります。
+    </p>
+
+    <h2>XSS攻撃の基本的な仕組み</h2>
+
+    <p>例えば、掲示板に次のような投稿ができるとします。</p>
+
+    <pre><code>こんにちは！</code></pre>
+
+    <p>
+      しかし、攻撃者が以下のような内容を投稿した場合を考えます。
+    </p>
+
+    <pre><code>&lt;script&gt;alert("XSS")&lt;/script&gt;</code></pre>
+
+    <p>
+      サイト側がこの入力をそのままHTMLとして表示してしまうと、
+      ブラウザはこれをJavaScriptとして実行してしまいます。
+    </p>
+
+    <div class="warning">
+      <strong>注意：</strong>
+      XSSでは、攻撃者のコードが「被害者のブラウザ上」で実行される点が重要です。
+    </div>
+
+    <h2>XSSで起こり得る被害</h2>
+
+    <ul>
+      <li>Cookieやセッション情報の盗難</li>
+      <li>偽のログイン画面の表示</li>
+      <li>ページ内容の改ざん</li>
+      <li>ユーザーになりすました操作</li>
+      <li>別の悪意あるサイトへの誘導</li>
+    </ul>
+
+    <h2>XSSの主な種類</h2>
+
+    <h3>1. 蓄積型XSS</h3>
+    <p>
+      攻撃コードが掲示板やプロフィール欄などに保存され、
+      そのページを見た他のユーザーに対して実行されるタイプです。
+    </p>
+
+    <h3>2. 反射型XSS</h3>
+    <p>
+      URLのパラメータなどに含まれた攻撃コードが、
+      サーバーのレスポンスにそのまま反映されて実行されるタイプです。
+    </p>
+
+    <h3>3. DOM Based XSS</h3>
+    <p>
+      サーバーではなく、ブラウザ側のJavaScript処理に問題があり、
+      DOM操作によって攻撃コードが実行されるタイプです。
+    </p>
+
+    <h2>XSSが発生する原因</h2>
+
+    <p>
+      XSSの主な原因は、ユーザー入力を適切に処理せず、
+      HTMLとしてそのまま出力してしまうことです。
+    </p>
+
+    <pre><code>投稿内容: &lt;script&gt;alert("XSS")&lt;/script&gt;</code></pre>
+
+    <p>
+      このように表示されると、ブラウザは
+      <code>&lt;script&gt;</code>タグを本物のJavaScriptとして解釈してしまいます。
+    </p>
+
+    <h2>XSSへの対策</h2>
+
+    <h3>1. エスケープ処理を行う</h3>
+    <p>
+      ユーザー入力に含まれる特殊文字を、HTMLとして解釈されない形に変換します。
+    </p>
+
+    <table border="1" cellpadding="8" cellspacing="0">
+      <tr>
+        <th>文字</th>
+        <th>変換後</th>
+      </tr>
+      <tr>
+        <td>&lt;</td>
+        <td>&amp;lt;</td>
+      </tr>
+      <tr>
+        <td>&gt;</td>
+        <td>&amp;gt;</td>
+      </tr>
+      <tr>
+        <td>"</td>
+        <td>&amp;quot;</td>
+      </tr>
+      <tr>
+        <td>'</td>
+        <td>&amp;#39;</td>
+      </tr>
+      <tr>
+        <td>&amp;</td>
+        <td>&amp;amp;</td>
+      </tr>
+    </table>
+
+    <h3>2. innerHTMLの使用を避ける</h3>
+    <p>
+      JavaScriptで画面に文字を表示する場合、
+      <code>innerHTML</code>ではなく<code>textContent</code>を使うことで、
+      入力内容をHTMLではなく文字列として扱えます。
+    </p>
+
+    <pre><code>// 危険な例
+element.innerHTML = userInput;
+
+// 安全な例
+element.textContent = userInput;</code></pre>
+
+    <h3>3. CookieにHttpOnly属性を付ける</h3>
+    <p>
+      Cookieに<code>HttpOnly</code>属性を付けると、
+      JavaScriptからCookieを読み取れなくなります。
+    </p>
+
+    <pre><code>Set-Cookie: sessionid=abc123; HttpOnly; Secure; SameSite=Lax</code></pre>
+
+    <h3>4. CSPを設定する</h3>
+    <p>
+      CSP、Content Security Policyを設定することで、
+      実行できるスクリプトの読み込み元を制限できます。
+    </p>
+
+    <pre><code>Content-Security-Policy: default-src 'self'; script-src 'self';</code></pre>
+
+    <div class="point">
+      <strong>ポイント：</strong>
+      XSS対策では、「入力を信用しない」「出力時にエスケープする」
+      という考え方が重要です。
+    </div>
+
+    <h2>まとめ</h2>
+
+    <p>
+      XSSは、ユーザー入力がHTMLやJavaScriptとして実行されてしまうことで発生します。
+      攻撃が成功すると、Cookieの盗難やページ改ざんなどの被害につながる可能性があります。
+    </p>
+
+    <p>
+      対策としては、エスケープ処理、危険なDOM操作の回避、
+      Cookieの保護、CSPの設定などが有効です。
+    </p>
+  </div>
+</body>
+</html>

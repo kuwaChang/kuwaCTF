@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パストラバーサルを学ぼう！</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --code-bg: #2d3748;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            line-height: 1.7;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 40px;
+            font-size: 2rem;
+            border-bottom: 4px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-left: 5px solid var(--primary-color);
+            padding-left: 15px;
+        }
+
+        h3 {
+            color: #4a5568;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+        }
+
+        p {
+            margin-bottom: 16px;
+            font-size: 1.05rem;
+        }
+
+        ul, ol {
+            margin-bottom: 20px;
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            font-size: 1.05rem;
+        }
+
+        strong {
+            color: var(--accent-color);
+        }
+
+        .highlight-box {
+            background-color: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .target-box {
+            background-color: #fff5f5;
+            border: 2px dashed var(--accent-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .target-box h3 {
+            color: var(--accent-color);
+            margin-top: 0;
+        }
+
+        code {
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+            background-color: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #2d3748;
+            font-size: 0.95rem;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #f7fafc;
+        }
+
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #cbd5e0, transparent);
+            margin: 50px 0;
+        }
+
+        .step-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px 15px;
+            }
+            h1 {
+                font-size: 1.6rem;
+            }
+            h2 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>📁 パストラバーサルを学ぼう！</h1>
+
+    <h2>1. パストラバーサルってなに？（座学編）</h2>
+    <p>「パストラバーサル（Path Traversal）」、難しそうな名前だけど、仕組みはめちゃくちゃシンプル。セキュリティの知識が全くなくても大丈夫！</p>
+    <p>一言でいうと、<strong>「部外者立ち入り禁止の部屋に、ズルい方法で忍び込むテクニック」</strong>のことです。</p>
+    <p>言葉を分解してみましょう。</p>
+    <ul>
+        <li><strong>パス（Path）：</strong> パソコンの中の「住所（フォルダの場所）」のこと</li>
+        <li><strong>トラバーサル（Traversal）：</strong> 「横断する」「通り抜ける」という意味</li>
+    </ul>
+    <p>つまり、<strong>「フォルダの場所を勝手に通り抜けて、本来見ちゃいけない重要ファイルを見に行くこと」</strong>を言います。</p>
+
+    <h3>💻 呪文 <code>../</code> の正体</h3>
+    <p>パソコンの世界には、<strong><code>../</code>（ドット・ドット・スラッシュ）</strong> という隠しコマンド（記号）があります。これは <strong>「1つ上のフォルダ（親フォルダ）に戻る」</strong> という意味です。</p>
+    
+    <p>例えば、学校のWebサイトで「公開フォルダ」の中にある『運動会のしおり.pdf』をダウンロードする機能があったとします。</p>
+    <p>普通の人はそのまま使いますが、悪知恵の働くハッカーは、ファイル名を入力する欄にこんな風に書き換えます。</p>
+    <p><code>../先生の秘密フォルダ/期末テストの解答.pdf</code></p>
+    
+    <p>するとシステムは、以下のように勘違いして動いてしまいます。</p>
+    <ol>
+        <li>まず「公開フォルダ」を開く。</li>
+        <li><code>../</code> を見つけて<strong>「あ、1つ上のフォルダに戻るんだな」</strong>と勘違いして戻っちゃう。</li>
+        <li>そのまま、本来行ってはいけない「先生の秘密フォルダ」へ進み、テストの解答を表示してしまう。</li>
+    </ol>
+    <p>これが<strong>パストラバーサル</strong>の仕組みです。</p>
+</div>
+
+</body>
+</html>
