@@ -1,7 +1,7 @@
 { 
   "win_streak_3": {
     "id": "win_streak_3",
-    "title": "3連勝",
+    "title": "EZ",
     "description": "3問連続で正解する",
     "icon": "🔥",
     "category": "skill",
@@ -53,9 +53,9 @@
   },
   "ctf_addict": {
     "id": "ctf_addict",
-    "title": "CTF中毒",
+    "title": "数打てば当たる？？？",
     "description": "1日に10問挑戦する",
-    "icon": "🎮",
+    "icon": "💪",
     "category": "study",
     "type": "daily_attempt",
     "condition": {
@@ -93,13 +93,13 @@
   "web_beginner": {
     "id": "web_beginner",
     "title": "Web入門者",
-    "description": "Webカテゴリを1問正解",
+    "description": "Webカテゴリを3問正解",
     "icon": "🌐",
     "category": "web",
     "type": "category_solve",
     "condition": {
       "category": "web",
-      "count": 1
+      "count": 3
     },
     "points": 10,
     "hidden": false
@@ -107,13 +107,13 @@
   "crypto_apprentice": {
     "id": "crypto_apprentice",
     "title": "Crypto見習い",
-    "description": "Cryptoカテゴリを1問正解",
+    "description": "Cryptoカテゴリを3問正解",
     "icon": "🔐",
     "category": "crypto",
     "type": "category_solve",
     "condition": {
       "category": "crypto",
-      "count": 1
+      "count": 3
     },
     "points": 10,
     "hidden": false
@@ -121,13 +121,13 @@
   "forensics_investigator": {
     "id": "forensics_investigator",
     "title": "Forensics調査員",
-    "description": "Forensicsカテゴリを1問正解",
+    "description": "Forensicsカテゴリを3問正解",
     "icon": "🔍",
     "category": "forensics",
     "type": "category_solve",
     "condition": {
       "category": "forensics",
-      "count": 1
+      "count": 3
     },
     "points": 10,
     "hidden": false
@@ -135,13 +135,13 @@
   "osint_detective": {
     "id": "osint_detective",
     "title": "OSINT探偵",
-    "description": "OSINTカテゴリを1問正解",
+    "description": "OSINTカテゴリを3問正解",
     "icon": "🕵️",
     "category": "osint",
     "type": "category_solve",
     "condition": {
       "category": "osint",
-      "count": 1
+      "count": 3
     },
     "points": 10,
     "hidden": false
@@ -177,13 +177,13 @@
   "forensics_expert": {
     "id": "forensics_expert",
     "title": "フォレンジックの専門家",
-    "description": "フォレンジック問題を3問解く",
+    "description": "フォレンジック問題を5問解く",
     "icon": "🔍",
     "category": "forensics",
     "type": "category_solve",
     "condition": {
       "category": "forensics",
-      "count": 3
+      "count": 5
     },
     "points": 40,
     "hidden": false
