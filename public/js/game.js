@@ -122,6 +122,9 @@ async function loadGameData() {
 
 function bindEvents() {
   installStorageTamperHooks();
+  // 初回のユーザー操作（クリック）時に効果音を事前読み込みしておく。
+  // 自動再生ポリシー対策も兼ね、一度だけ実行する。
+  window.addEventListener("pointerdown", preloadSfx, { once: true });
   if (ui.syncScoreBtn) {
     ui.syncScoreBtn.addEventListener("click", syncScoreFromServer);
   }
@@ -521,11 +524,118 @@ function removeAfter(el, ms) {
   }, ms);
 }
 
+// ===== サウンド（mp3などの音声ファイルを再生） =====
+const SFX_SOURCES = {
+  attack: "/audio/attack.mp3",       // 通常攻撃の命中音
+  critical: "/audio/critical.mp3",   // クリティカル時に重ねる音
+  playerHit: "/audio/player_hit.mp3",// プレイヤー被弾音
+  guard: "/audio/guard.mp3"          // 防御音
+};
+
+// 全体の音量（0.0〜1.0）
+const SFX_VOLUME = 0.4;
+
+let audioCtx = null;
+const sfxBuffers = {};   // key -> AudioBuffer（デコード済み）
+const sfxLoading = {};   // key -> Promise（多重ロード防止）
+const sfxWarned = {};    // key -> true（読み込み失敗の警告を一度だけ出す）
+
+// ユーザー操作（攻撃ボタン等）起点で初回に生成する。自動再生ポリシー対策で resume も行う。
+function getAudioContext() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!audioCtx) {
+    audioCtx = new AudioCtx();
+  }
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+}
+
+// 音声ファイルを取得してデコードし、AudioBufferをキャッシュする。
+function loadSfx(key) {
+  const url = SFX_SOURCES[key];
+  if (!url) return Promise.resolve(null);
+  if (sfxBuffers[key]) return Promise.resolve(sfxBuffers[key]);
+  if (sfxLoading[key]) return sfxLoading[key];
+
+  const ctx = getAudioContext();
+  if (!ctx) return Promise.resolve(null);
+
+  sfxLoading[key] = fetch(url)
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.arrayBuffer();
+    })
+    .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer))
+    .then((buffer) => {
+      sfxBuffers[key] = buffer;
+      return buffer;
+    })
+    .catch((err) => {
+      if (!sfxWarned[key]) {
+        sfxWarned[key] = true;
+        console.warn(`効果音の読み込みに失敗しました (${key}: ${url})`, err);
+      }
+      return null;
+    });
+  return sfxLoading[key];
+}
+
+// デコード済みバッファを再生する。連打時も重ねて再生できる。
+function playBuffer(key, { volume = 1, delay = 0 } = {}) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const buffer = sfxBuffers[key];
+  if (!buffer) {
+    // 未ロードなら読み込んでから再生（初回はわずかに遅れる可能性あり）
+    loadSfx(key).then((buf) => {
+      if (buf) playBuffer(key, { volume, delay });
+    });
+    return;
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const gain = ctx.createGain();
+  gain.gain.value = SFX_VOLUME * volume;
+  src.connect(gain).connect(ctx.destination);
+  src.start(ctx.currentTime + delay);
+}
+
+// 事前読み込み（初回のユーザー操作時に呼ぶと、以降の再生が途切れない）
+function preloadSfx() {
+  Object.keys(SFX_SOURCES).forEach((key) => loadSfx(key));
+}
+
+// 敵への攻撃命中音
+function playAttackSound(critical) {
+  playBuffer("attack");
+  if (critical) {
+    // クリティカルは専用音を少し遅らせて重ねる（ファイルが無ければ無音でスキップ）
+    playBuffer("critical", { delay: 0.05 });
+  }
+}
+
+// プレイヤー被弾音
+function playPlayerHitSound(guarded) {
+  // ガード時は音量を控えめにする
+  playBuffer("playerHit", { volume: guarded ? 0.5 : 1 });
+}
+
+// 防御音
+function playGuardSound() {
+  playBuffer("guard");
+}
+
 // 敵への攻撃命中演出（斬撃・被弾フラッシュ・シェイク・ダメージ数値）
 function playEnemyHitEffect(dmg, critical) {
   const wrap = ui.enemyArea?.querySelector(".enemy-visual-wrap");
   const image = ui.enemyArea?.querySelector(".enemy-image");
   if (!wrap) return;
+
+  // エフェクトと同時に攻撃音を鳴らす
+  playAttackSound(critical);
 
   const slash = document.createElement("div");
   slash.className = "fx-slash" + (critical ? " critical" : "");
@@ -554,6 +664,9 @@ function playEnemyHitEffect(dmg, critical) {
 
 // プレイヤーの被弾演出（画面の赤フラッシュ・揺れ・ダメージ数値）
 function playPlayerHitEffect(dmg, guarded) {
+  // エフェクトと同時に被弾音を鳴らす
+  playPlayerHitSound(guarded);
+
   const screen = document.querySelector(".battle-screen");
   if (screen) {
     screen.classList.remove("fx-screen-hit");
@@ -569,6 +682,9 @@ function playPlayerHitEffect(dmg, guarded) {
 
 // 防御演出（プレイヤーHPバー周りに青いシールドフラッシュ）
 function playGuardEffect() {
+  // エフェクトと同時に防御音を鳴らす
+  playGuardSound();
+
   const hpWrap = document.querySelector(".player-hp-wrap");
   if (!hpWrap) return;
   const shield = document.createElement("div");
