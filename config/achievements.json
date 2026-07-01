@@ -1,9 +1,9 @@
 { 
   "win_streak_3": {
     "id": "win_streak_3",
-    "title": "EZ",
+    "title": "It's a piece of cakes",
     "description": "3問連続で正解する",
-    "icon": "🔥",
+    "icon": "🎂",
     "category": "skill",
     "type": "consecutive_correct",
     "condition": {
@@ -204,7 +204,7 @@
   },
   "score_100": {
     "id": "score_100",
-    "title": "スコア100点達成",
+    "title": "慣れてきたかな？？？",
     "description": "累計スコアが100点に到達",
     "icon": "💯",
     "category": "milestone",
@@ -217,7 +217,7 @@
   },
   "score_500": {
     "id": "score_500",
-    "title": "スコア500点達成",
+    "title": "一人前",
     "description": "累計スコアが500点に到達",
     "icon": "🏆",
     "category": "milestone",
@@ -230,7 +230,7 @@
   },
   "score_1000": {
     "id": "score_1000",
-    "title": "スコア1000点達成",
+    "title": "チュートリアル終了！",
     "description": "累計スコアが1000点に到達",
     "icon": "👑",
     "category": "milestone",
@@ -282,9 +282,9 @@
   },
   "speed_solver": {
     "id": "speed_solver",
-    "title": "スピードソルバー",
+    "title": "瞬足",
     "description": "1時間以内に5問解く",
-    "icon": "⚡",
+    "icon": "👟",
     "category": "speed",
     "type": "speed_solve",
     "condition": {
@@ -296,9 +296,9 @@
   },
   "speed_solver_10": {
     "id": "speed_solver_10",
-    "title": "スピードスター",
+    "title": "霹靂一閃",
     "description": "1時間以内に10問解く",
-    "icon": "💨",
+    "icon": "⚔⚡",
     "category": "speed",
     "type": "speed_solve",
     "condition": {
@@ -312,7 +312,7 @@
     "id": "speed_solver_15",
     "title": "最高速度でぶち抜いたる",
     "description": "1時間以内に15問解く",
-    "icon": "🚀",
+    "icon": "💨",
     "category": "speed",
     "type": "speed_solve",
     "condition": {
@@ -324,7 +324,7 @@
   },
   "all_categories": {
     "id": "all_categories",
-    "title": "オールラウンダー",
+    "title": "全範囲カバー",
     "description": "すべてのカテゴリーで問題を解く",
     "icon": "🌟",
     "category": "completion",
