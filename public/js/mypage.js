@@ -67,9 +67,16 @@ async function loadMyPageData() {
       userIcon.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Ccircle cx='60' cy='60' r='60' fill='%23667eea'/%3E%3Ctext x='60' y='75' font-size='60' text-anchor='middle' fill='white'%3E👤%3C/text%3E%3C/svg%3E";
     }
 
+    // 装備中デコレーションを反映
+    applyNameDeco(sessionData.nameDecoClass);
+    applyIconDeco(sessionData.iconDecoClass);
+
     // 表示を切り替え
     loadingMessage.style.display = "none";
     userInfo.style.display = "block";
+
+    // デコレーションショップを読み込む
+    loadDecorationShop();
 
   } catch (error) {
     console.error("マイページデータ読み込みエラー:", error);
@@ -249,6 +256,163 @@ async function updatePassword() {
   } finally {
     updateBtn.disabled = false;
     updateBtn.textContent = "パスワードを更新";
+  }
+}
+
+// ===== デコレーション =====
+
+let decoState = null;
+
+// ユーザー名要素へデコレーションclassを適用する
+function applyNameDeco(className) {
+  const el = document.getElementById("username");
+  if (!el) return;
+  el.className = "info-value";
+  if (className) el.classList.add(className);
+}
+
+// アイコン要素へ縁デコレーションclassを適用する
+function applyIconDeco(className) {
+  const el = document.getElementById("userIcon");
+  if (!el) return;
+  [...el.classList].forEach((c) => {
+    if (c.startsWith("deco-icon-")) el.classList.remove(c);
+  });
+  if (className) el.classList.add(className);
+}
+
+// デコレーション一覧を取得してショップを描画する
+async function loadDecorationShop() {
+  try {
+    const res = await fetch("/decorations/list", { credentials: "include" });
+    if (!res.ok) return;
+    decoState = await res.json();
+
+    const balanceEl = document.getElementById("pointBalance");
+    if (balanceEl) balanceEl.textContent = `${decoState.balance} pt`;
+    const detailEl = document.getElementById("pointDetail");
+    if (detailEl) {
+      detailEl.textContent = `獲得: ${decoState.earnedPoints} pt / 使用済み: ${decoState.spentPoints} pt`;
+    }
+
+    renderDecoGrid("nameDecoGrid", decoState.decorations.name, "name");
+    renderDecoGrid("iconDecoGrid", decoState.decorations.icon, "icon");
+  } catch (error) {
+    console.error("デコレーション読み込みエラー:", error);
+  }
+}
+
+function renderDecoGrid(containerId, items, kind) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = "";
+  const previewName = document.getElementById("username")?.textContent || "ユーザー名";
+
+  items.forEach((deco) => {
+    const card = document.createElement("div");
+    card.className = "deco-card" + (deco.equipped ? " equipped" : "");
+
+    const preview = document.createElement("div");
+    preview.className = "deco-preview";
+    if (kind === "name") {
+      const span = document.createElement("span");
+      span.textContent = previewName;
+      if (deco.className) span.className = deco.className;
+      preview.appendChild(span);
+    } else {
+      const circle = document.createElement("div");
+      circle.className = "deco-preview-icon" + (deco.className ? " " + deco.className : "");
+      preview.appendChild(circle);
+    }
+    card.appendChild(preview);
+
+    const title = document.createElement("div");
+    title.className = "deco-name";
+    title.textContent = deco.title;
+    card.appendChild(title);
+
+    const desc = document.createElement("div");
+    desc.className = "deco-desc";
+    desc.textContent = deco.description;
+    card.appendChild(desc);
+
+    const cost = document.createElement("div");
+    cost.className = "deco-cost";
+    cost.textContent = deco.cost > 0 ? `${deco.cost} pt` : "無料";
+    card.appendChild(cost);
+
+    const btn = document.createElement("button");
+    btn.className = "deco-btn";
+    if (deco.equipped) {
+      btn.textContent = "装備中";
+      btn.classList.add("equipped-btn");
+      btn.disabled = true;
+    } else if (deco.owned) {
+      btn.textContent = "装備する";
+      btn.addEventListener("click", () => equipDecoration(deco.id));
+    } else {
+      btn.textContent = "購入する";
+      btn.classList.add("buy");
+      btn.disabled = decoState.balance < deco.cost;
+      btn.addEventListener("click", () => purchaseDecoration(deco.id));
+    }
+    card.appendChild(btn);
+
+    container.appendChild(card);
+  });
+}
+
+function setDecoStatus(message, isError) {
+  const statusEl = document.getElementById("decoStatus");
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.style.color = isError ? "#dc3545" : "#28a745";
+}
+
+async function purchaseDecoration(decorationId) {
+  try {
+    const res = await fetch("/decorations/purchase", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decorationId }),
+      credentials: "include"
+    });
+    const result = await res.json();
+    if (result.success) {
+      setDecoStatus(result.message, false);
+      await loadDecorationShop();
+    } else {
+      setDecoStatus(result.message || "購入に失敗しました", true);
+    }
+  } catch (error) {
+    console.error("デコレーション購入エラー:", error);
+    setDecoStatus("エラーが発生しました", true);
+  }
+}
+
+async function equipDecoration(decorationId) {
+  try {
+    const res = await fetch("/decorations/equip", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decorationId }),
+      credentials: "include"
+    });
+    const result = await res.json();
+    if (result.success) {
+      setDecoStatus(result.message, false);
+      if (result.type === "name") {
+        applyNameDeco(result.className);
+      } else if (result.type === "icon") {
+        applyIconDeco(result.className);
+      }
+      await loadDecorationShop();
+    } else {
+      setDecoStatus(result.message || "装備に失敗しました", true);
+    }
+  } catch (error) {
+    console.error("デコレーション装備エラー:", error);
+    setDecoStatus("エラーが発生しました", true);
   }
 }
 

@@ -1,0 +1,96 @@
+{
+  "name": [
+    {
+      "id": "name_default",
+      "type": "name",
+      "title": "デフォルト",
+      "description": "標準の表示です。",
+      "cost": 0,
+      "className": "",
+      "default": true
+    },
+    {
+      "id": "name_ocean",
+      "type": "name",
+      "title": "オーシャン",
+      "description": "青のグラデーションで名前を彩ります。",
+      "cost": 40,
+      "className": "deco-name-ocean"
+    },
+    {
+      "id": "name_sunset",
+      "type": "name",
+      "title": "サンセット",
+      "description": "夕焼け色のグラデーション。",
+      "cost": 60,
+      "className": "deco-name-sunset"
+    },
+    {
+      "id": "name_gold",
+      "type": "name",
+      "title": "ゴールド",
+      "description": "光り輝くゴールドの文字。",
+      "cost": 120,
+      "className": "deco-name-gold"
+    },
+    {
+      "id": "name_neon",
+      "type": "name",
+      "title": "ネオン",
+      "description": "淡く発光するネオングリーン。",
+      "cost": 150,
+      "className": "deco-name-neon"
+    },
+    {
+      "id": "name_rainbow",
+      "type": "name",
+      "title": "レインボー",
+      "description": "七色に流れるアニメーション文字。",
+      "cost": 250,
+      "className": "deco-name-rainbow"
+    }
+  ],
+  "icon": [
+    {
+      "id": "icon_default",
+      "type": "icon",
+      "title": "デフォルト",
+      "description": "標準の紫色の縁です。",
+      "cost": 0,
+      "className": "deco-icon-default",
+      "default": true
+    },
+    {
+      "id": "icon_gold",
+      "type": "icon",
+      "title": "ゴールドリング",
+      "description": "金色の縁と柔らかな輝き。",
+      "cost": 80,
+      "className": "deco-icon-gold"
+    },
+    {
+      "id": "icon_emerald",
+      "type": "icon",
+      "title": "エメラルド",
+      "description": "深い緑の縁。",
+      "cost": 60,
+      "className": "deco-icon-emerald"
+    },
+    {
+      "id": "icon_glow",
+      "type": "icon",
+      "title": "グロウ",
+      "description": "青白く発光する縁。",
+      "cost": 100,
+      "className": "deco-icon-glow"
+    },
+    {
+      "id": "icon_rainbow",
+      "type": "icon",
+      "title": "レインボーリング",
+      "description": "回転する七色のグラデーション縁。",
+      "cost": 220,
+      "className": "deco-icon-rainbow"
+    }
+  ]
+}

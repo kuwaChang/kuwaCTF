@@ -1447,14 +1447,27 @@ app.get("/getScore", (req, res) => {
 app.get("/ranking", (req, res) => {
   // セキュリティ: SQLインジェクション対策（既にパラメータ化クエリを使用）
   // LIMIT値も固定値なので安全
-  db.all("SELECT userid, score FROM users ORDER BY score DESC LIMIT 10", [], (err, rows) => {
-    if (err) {
-      console.error("DBエラー:", err);
-      // セキュリティ: エラー詳細をクライアントに返さない
-      return res.status(500).json({ error: "データ取得に失敗しました" });
+  db.all(
+    "SELECT userid, username, score, icon_path, equipped_name_deco, equipped_icon_deco FROM users ORDER BY score DESC LIMIT 10",
+    [],
+    (err, rows) => {
+      if (err) {
+        console.error("DBエラー:", err);
+        // セキュリティ: エラー詳細をクライアントに返さない
+        return res.status(500).json({ error: "データ取得に失敗しました" });
+      }
+      const { resolveClass } = require("./services/decorations");
+      const result = rows.map((row) => ({
+        userid: row.userid,
+        username: row.username,
+        score: row.score,
+        iconPath: row.icon_path || null,
+        nameDecoClass: resolveClass("name", row.equipped_name_deco),
+        iconDecoClass: resolveClass("icon", row.equipped_icon_deco)
+      }));
+      res.json(result); //json形式で返す
     }
-    res.json(rows); //json形式で返す
-  });
+  );
 });
 
 // DB初期化
@@ -1492,6 +1505,20 @@ db.serialize(() => {
       console.error("   エラーコード:", err.code);
       console.error("   スタックトレース:", err.stack);
     }
+  });
+
+  // デコレーション機能用カラム（実績ポイントの消費額・装備中デコレーション）
+  const decorationColumns = [
+    "ALTER TABLE users ADD COLUMN spent_points INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN equipped_name_deco TEXT",
+    "ALTER TABLE users ADD COLUMN equipped_icon_deco TEXT"
+  ];
+  decorationColumns.forEach((sql) => {
+    db.run(sql, (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error("❌ デコレーションカラム追加エラー:", err.message);
+      }
+    });
   });
 
   // 既存のadminユーザーにroleを設定（マイグレーション）
@@ -1550,13 +1577,29 @@ db.serialize(() => {
       //console.log("✅ [server.js] データベース初期化完了");
     }
   });
+
+  // デコレーション所持テーブル
+  db.run(`CREATE TABLE IF NOT EXISTS user_decorations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userid TEXT,
+    decoration_id TEXT,
+    owned_at TEXT,
+    UNIQUE(userid, decoration_id)
+  )`, (err) => {
+    if (err) {
+      console.error("❌ user_decorationsテーブル作成エラー:", err.message);
+    }
+  });
 });
+
+// デコレーションの装備状態を解決するヘルパー（session-check で利用）
+const { getEquippedClasses } = require("./routes/decorations");
 
 //セッション確認API
 app.get("/session-check", (req, res) => {
   if (req.session.userid) {
     // ログイン中ならユーザー情報を返す（roleとicon_pathも含む）
-    db.get("SELECT username, role, icon_path FROM users WHERE userid = ?", [req.session.userid], (err, row) => {
+    db.get("SELECT username, role, icon_path FROM users WHERE userid = ?", [req.session.userid], async (err, row) => {
       if (err || !row) {
         return res.json({ loggedIn: false });
       }
@@ -1565,12 +1608,15 @@ app.get("/session-check", (req, res) => {
       if (req.session.role !== userRole) {
         req.session.role = userRole; // セッションのroleを更新
       }
+      const deco = await getEquippedClasses(req.session.userid);
       res.json({ 
         loggedIn: true, 
         userid: req.session.userid,
         username: row.username,
         role: userRole,
-        iconPath: row.icon_path || null
+        iconPath: row.icon_path || null,
+        nameDecoClass: deco.nameDecoClass,
+        iconDecoClass: deco.iconDecoClass
       });
     });
   } else {
@@ -1935,12 +1981,14 @@ try {
   //console.log("✅ achievementsルート読み込み完了");
   const tutorRoutes = require("./routes/tutor");
   //console.log("✅ tutorルート読み込み完了");
+  const { router: decorationRoutes } = require("./routes/decorations");
 
   app.use("/auth", authRoutes);
   app.use("/quiz", quizRoutes);
   app.use("/admin", adminRoutes);
   app.use("/achievements", achievementRoutes);
   app.use("/tutor", tutorRoutes);
+  app.use("/decorations", decorationRoutes);
   app.use("/sad", sadRouter);
   //console.log("✅ すべてのルートを登録しました");
 } catch (error) {

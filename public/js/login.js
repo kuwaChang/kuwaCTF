@@ -1,11 +1,30 @@
 import { initTabs } from "./tabs.js";
 import { loadQuizData } from "./quiz.js";
 
+// ようこそ表示を更新する（ユーザー名にデコレーションを適用）
+function updateWelcome(username, nameDecoClass) {
+  const welcome = document.getElementById("welcome");
+  if (!welcome) return;
+  welcome.textContent = "";
+  const nameSpan = document.createElement("span");
+  nameSpan.textContent = username;
+  if (nameDecoClass) nameSpan.className = nameDecoClass;
+  welcome.append(document.createTextNode("ようこそ "), nameSpan, document.createTextNode(" さん！"));
+}
+
 // ユーザーアイコンを更新する関数
-function updateUserIcon(iconPath) {
+function updateUserIcon(iconPath, iconDecoClass) {
   const iconImg = document.getElementById("userIconImg");
   const iconDefault = document.getElementById("userIconDefault");
-  
+
+  // アイコンの縁デコレーションを適用
+  if (iconImg) {
+    [...iconImg.classList].forEach((c) => {
+      if (c.startsWith("deco-icon-")) iconImg.classList.remove(c);
+    });
+    if (iconDecoClass) iconImg.classList.add(iconDecoClass);
+  }
+
   if (iconPath && iconImg && iconDefault) {
     iconImg.src = iconPath + "?t=" + Date.now(); // キャッシュ回避
     iconImg.style.display = "block";
@@ -101,10 +120,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     // すでにログイン中ならUIを切り替える
     document.getElementById("loginSection").classList.add("hidden");
     document.getElementById("mainSection").classList.remove("hidden");
-    document.getElementById("welcome").innerText = "ようこそ " + data.username + " さん！";
+    updateWelcome(data.username, data.nameDecoClass);
 
     // ユーザーアイコンを表示
-    updateUserIcon(data.iconPath);
+    updateUserIcon(data.iconPath, data.iconDecoClass);
 
     initTabs();
     loadQuizData();
@@ -138,13 +157,15 @@ export function initLogin(onLoginSuccess) {
       document.getElementById("loginMessage").innerText = "";
       document.getElementById("loginSection").classList.add("hidden");
       document.getElementById("mainSection").classList.remove("hidden");
-      document.getElementById("welcome").innerText = "ようこそ " + result.username + " さん！";
 
-      // ユーザーアイコンを取得して表示
+      // ユーザーアイコン・デコレーションを取得して表示
       const sessionRes = await fetch("/session-check", { credentials: "include" });
       const sessionData = await sessionRes.json();
       if (sessionData.loggedIn) {
-        updateUserIcon(sessionData.iconPath);
+        updateWelcome(result.username, sessionData.nameDecoClass);
+        updateUserIcon(sessionData.iconPath, sessionData.iconDecoClass);
+      } else {
+        updateWelcome(result.username, null);
       }
 
       // ✅ ログイン成功後の処理（タブと問題をロード）
