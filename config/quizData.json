@@ -581,8 +581,7 @@
       ],
       "point": 50,
       "files": [],
-      "url": "http://localhost:3333/html/sql_index.html",
-      "explanation": "解説ページのURLを入力してください"
+      "url": "http://localhost:3333/html/sql_index.html"
     },
     "web5": {
       "answer": "FLAG{hidden_flag_discovered}",
@@ -597,8 +596,7 @@
       ],
       "point": 50,
       "files": [],
-      "url": "http://localhost:3333/html/advertisement.html",
-      "explanation": "解説ページのURLを入力してください"
+      "url": "http://localhost:3333/html/advertisement.html"
     },
     "web6": {
       "answer": "FLAG{check_http_headers}",

@@ -381,6 +381,16 @@
         const indicator = document.getElementById('statusIndicator');
         const statusText = document.getElementById('statusText');
         
+        if (response.status === 401) {
+          if (statusPollTimer) {
+            clearInterval(statusPollTimer);
+            statusPollTimer = null;
+          }
+          indicator.className = 'status-indicator warning';
+          statusText.textContent = 'ログインしてください';
+          return true;
+        }
+        
         if (status.ready) {
           if (statusPollTimer) {
             clearInterval(statusPollTimer);

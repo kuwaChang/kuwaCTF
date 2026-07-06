@@ -517,4 +517,60 @@ router.put("/users/:userid/profile", requireAdmin, async (req, res) => {
   }
 });
 
+// ============================================================
+// [一時機能 / TEMP] 指定ユーザーをDBから削除する機能（今後削除予定）
+// このブロックをまるごと消せば機能を撤去できます。
+// ============================================================
+router.delete("/users/:userid", requireAdmin, (req, res) => {
+  let { userid } = req.params;
+
+  // セキュリティ: 入力値のサニタイゼーションとバリデーション
+  userid = sanitizeInput(userid, 20);
+  if (!validateUserId(userid)) {
+    return res.status(400).json({ message: "無効なユーザーIDです" });
+  }
+
+  // セキュリティ: 自分自身の削除は禁止（管理者ロックアウト防止）
+  if (userid === req.session.userid) {
+    return res.status(400).json({ message: "自分自身のアカウントは削除できません" });
+  }
+
+  // 対象ユーザーの存在確認 → 関連データも含めてトランザクションで削除
+  db.serialize(() => {
+    db.get("SELECT userid FROM users WHERE userid = ?", [userid], (err, row) => {
+      if (err) {
+        console.error("ユーザー削除（存在確認）エラー:", err);
+        return res.status(500).json({ message: "ユーザーの削除に失敗しました" });
+      }
+      if (!row) {
+        return res.status(404).json({ message: "ユーザーが見つかりません" });
+      }
+
+      db.run("BEGIN TRANSACTION");
+      // 関連テーブルのデータも削除（外部キー制約がないため手動で掃除）
+      db.run("DELETE FROM solved WHERE userid = ?", [userid]);
+      db.run("DELETE FROM study_sessions WHERE userid = ?", [userid]);
+      db.run("DELETE FROM user_achievements WHERE userid = ?", [userid]);
+      db.run("DELETE FROM user_decorations WHERE userid = ?", [userid]);
+      db.run("DELETE FROM users WHERE userid = ?", [userid], function (delErr) {
+        if (delErr) {
+          console.error("ユーザー削除エラー:", delErr);
+          db.run("ROLLBACK");
+          return res.status(500).json({ message: "ユーザーの削除に失敗しました" });
+        }
+        db.run("COMMIT", (commitErr) => {
+          if (commitErr) {
+            console.error("ユーザー削除（コミット）エラー:", commitErr);
+            return res.status(500).json({ message: "ユーザーの削除に失敗しました" });
+          }
+          res.json({ message: `ユーザー ${userid} を削除しました` });
+        });
+      });
+    });
+  });
+});
+// ============================================================
+// [一時機能 / TEMP] ここまで
+// ============================================================
+
 module.exports = router;

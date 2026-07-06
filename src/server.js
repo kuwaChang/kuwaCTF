@@ -581,16 +581,27 @@ app.get("/pre", (req, res) => {
 
 // CTF RPGモード
 app.get("/game", (req, res) => {
+  if (!req.session.userid) {
+    return res.redirect("/");
+  }
   res.sendFile(path.join(paths.VIEWS, "pages", "game.html"));
 });
 
 app.get("/game-battle", (req, res) => {
+  if (!req.session.userid) {
+    return res.redirect("/");
+  }
   res.sendFile(path.join(paths.VIEWS, "pages", "game-battle.html"));
 });
 
 // 広告ページ（flag-hidden 演習用）
 app.get("/advertisement", (req, res) => {
   res.sendFile(path.join(paths.VIEWS, "pages", "advertisement.html"));
+});
+
+// Sad Server 用の別ウィンドウターミナルページ
+app.get("/sad-terminal", (req, res) => {
+  res.sendFile(path.join(paths.VIEWS, "pages", "sad-terminal.html"));
 });
 
 // ============================================

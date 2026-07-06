@@ -34,44 +34,38 @@
       background-color: #2d3035;
       color: white;
     }
-    #sad-start-btn {
+    #sad-server-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    #sad-create-btn, #sad-destroy-btn {
       padding: 8px 16px;
-      background-color: #0078ff;
       border: none;
       border-radius: 5px;
       color: white;
       cursor: pointer;
       margin-bottom: 10px;
     }
-    #sad-start-btn:hover { background-color: #005ecb; }
-    #sad-terminal { 
-      width: 100%; 
-      height: 400px; 
-      background: #000; 
-      margin-top: 10px;
-      position: relative;
+    #sad-create-btn { background-color: #0078ff; }
+    #sad-create-btn:hover:not(:disabled) { background-color: #005ecb; }
+    #sad-destroy-btn { background-color: #d9534f; }
+    #sad-destroy-btn:hover:not(:disabled) { background-color: #b52b27; }
+    #sad-create-btn:disabled, #sad-destroy-btn:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+      opacity: 0.6;
     }
-    /* xterm.jsのスクロールバーを表示 */
-    #sad-terminal .xterm-viewport {
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
+    #sad-note {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: #ffcf66;
     }
-    #sad-terminal .xterm-scroll-area {
-      overflow-y: auto !important;
-    }
-    /* xterm.jsのスクロールバーのスタイル */
-    #sad-terminal .xterm-viewport::-webkit-scrollbar {
-      width: 10px;
-    }
-    #sad-terminal .xterm-viewport::-webkit-scrollbar-track {
-      background: #1e1e1e;
-    }
-    #sad-terminal .xterm-viewport::-webkit-scrollbar-thumb {
-      background: #555;
-      border-radius: 5px;
-    }
-    #sad-terminal .xterm-viewport::-webkit-scrollbar-thumb:hover {
-      background: #777;
+    #sad-status {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #9fd3ff;
+      min-height: 18px;
     }
   </style>
 </head>
@@ -200,10 +194,7 @@
       <p id="modal-category-id" class="modal-category-id hidden"></p>
       <p id="modal-desc"></p>
       <p><strong>得点:</strong> <span id="modal-point"></span> 点</p>
-      <details>
-        <summary>ヒント</summary>
-        <div id="modal-hints"></div>
-      </details>
+      <div id="modal-hints"></div>
 
       <div id="modal-files"></div>
 
@@ -218,8 +209,12 @@
             <option value="test1">Test 1</option>
           </select>
         </label>
-        <button id="sad-start-btn">シナリオを開始</button>
-        <div id="sad-terminal"></div>
+        <div id="sad-server-controls">
+          <button id="sad-create-btn" type="button">Create Server</button>
+          <button id="sad-destroy-btn" type="button" disabled>Destroy Server</button>
+        </div>
+        <p id="sad-note">⚠️ ターミナルは一人一つまでです。</p>
+        <p id="sad-status"></p>
       </div>
 
       <hr>

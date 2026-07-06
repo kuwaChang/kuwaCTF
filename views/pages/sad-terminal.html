@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sad Server ターミナル</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <link rel="stylesheet" href="../lib/xterm/xterm.css">
+  <script src="../lib/xterm/xterm.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      color: #fff;
+      font-family: Consolas, "Courier New", monospace;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+    #sad-terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      background: #1e1e1e;
+      border-bottom: 1px solid #333;
+      font-size: 13px;
+    }
+    #sad-terminal-header .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #999;
+      display: inline-block;
+    }
+    #sad-terminal-header .status-dot.connected { background: #4caf50; }
+    #sad-terminal-header .status-dot.error { background: #d9534f; }
+    #sad-terminal {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      background: #000;
+      padding: 4px;
+    }
+    #sad-terminal .xterm-viewport {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+    }
+    #sad-terminal .xterm-viewport::-webkit-scrollbar { width: 10px; }
+    #sad-terminal .xterm-viewport::-webkit-scrollbar-track { background: #1e1e1e; }
+    #sad-terminal .xterm-viewport::-webkit-scrollbar-thumb { background: #555; border-radius: 5px; }
+    #sad-terminal .xterm-viewport::-webkit-scrollbar-thumb:hover { background: #777; }
+  </style>
+</head>
+<body>
+  <div id="sad-terminal-header">
+    <span id="sad-conn-dot" class="status-dot"></span>
+    <span id="sad-conn-label">接続待機中...</span>
+    <span id="sad-scenario-label"></span>
+  </div>
+  <div id="sad-terminal"></div>
+  <script src="../js/sad-terminal.js"></script>
+</body>
+</html>

@@ -465,6 +465,17 @@ async function searchUser(userid) {
             ロールを変更
           </button>
         </div>
+        <!-- [一時機能 / TEMP] ユーザー削除（今後削除予定） -->
+        <div class="form-group" style="margin-top: 15px;">
+          <button 
+            type="button" 
+            class="user-delete-btn" 
+            onclick="deleteUser('${user.userid}')"
+            style="margin-top: 10px; background: #f5576c; color: #fff;"
+          >
+            このユーザーを削除
+          </button>
+        </div>
       `;
       
       container.appendChild(userDiv);
@@ -573,3 +584,40 @@ window.updateUserRole = async function(userid) {
     alert("サーバーエラーが発生しました");
   }
 }
+
+// ============================================================
+// [一時機能 / TEMP] 指定ユーザーをDBから削除する（今後削除予定）
+// このブロックをまるごと消せば機能を撤去できます。
+// ============================================================
+window.deleteUser = async function(userid) {
+  if (!confirm(`ユーザー ${userid} をデータベースから完全に削除します。\nこの操作は取り消せません。よろしいですか？`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`/admin/users/${encodeURIComponent(userid)}`, {
+      method: "DELETE",
+      credentials: "include"
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      alert(result.message || "ユーザーを削除しました");
+      // キャッシュを無効化して検索結果を再取得
+      allUsersData = [];
+      const searchUserId = document.getElementById("searchUserId");
+      if (searchUserId && searchUserId.value.trim()) {
+        await searchUser(searchUserId.value.trim());
+      }
+    } else {
+      alert(result.message || "ユーザーの削除に失敗しました");
+    }
+  } catch (err) {
+    console.error("ユーザー削除エラー:", err);
+    alert("サーバーエラーが発生しました");
+  }
+}
+// ============================================================
+// [一時機能 / TEMP] ここまで
+// ============================================================

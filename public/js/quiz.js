@@ -141,6 +141,61 @@ function buildCategoryGroups(data) {
 // Sad Server用のグローバル変数
 let currentSadInstanceId = null;
 let currentSadSocket = null;
+let currentSadWindow = null; // 別ウィンドウのターミナル参照
+let currentSadScenarioId = null;
+let currentSadWsPath = null;
+
+// 別ウィンドウの固定名（リロード後も同じウィンドウを再取得するため）
+const SAD_WINDOW_NAME = "sadServerTerminal";
+// 起動状態の永続化キー（リロードしても Create の多重起動を防ぐ）
+const SAD_STORAGE_KEY = "sadServerState";
+// サーバー側の自動停止時間（30分）に合わせて状態を無効化する
+const SAD_STATE_TTL_MS = 30 * 60 * 1000;
+
+// 起動状態を localStorage に保存
+function saveSadState(instanceId, scenarioId, wsPath) {
+  try {
+    localStorage.setItem(
+      SAD_STORAGE_KEY,
+      JSON.stringify({ instanceId, scenarioId, wsPath, createdAt: Date.now() })
+    );
+  } catch (e) { /* noop */ }
+}
+
+// 起動状態を localStorage から読み込み（期限切れは破棄）
+function loadSadState() {
+  try {
+    const raw = localStorage.getItem(SAD_STORAGE_KEY);
+    if (!raw) return null;
+    const state = JSON.parse(raw);
+    if (!state || !state.instanceId) return null;
+    // 期限切れ（サーバー側で自動停止済み）の場合は破棄
+    if (state.createdAt && Date.now() - state.createdAt > SAD_STATE_TTL_MS) {
+      clearSadState();
+      return null;
+    }
+    return state;
+  } catch (e) {
+    return null;
+  }
+}
+
+// 起動状態をクリア
+function clearSadState() {
+  try {
+    localStorage.removeItem(SAD_STORAGE_KEY);
+  } catch (e) { /* noop */ }
+}
+
+// リロード時: 保存済みの起動状態をメモリに復元
+(function restoreSadStateFromStorage() {
+  const state = loadSadState();
+  if (state) {
+    currentSadInstanceId = state.instanceId;
+    currentSadScenarioId = state.scenarioId || null;
+    currentSadWsPath = state.wsPath || null;
+  }
+})();
 
 // JSONから問題一覧を読み込み
 export async function loadQuizData() {
@@ -437,10 +492,11 @@ function openModal(category, qid, evt = null) {
   const hintsContainer = document.getElementById("modal-hints");
   hintsContainer.innerHTML = "";
   hintsContainer.currentHintIndex = 0;
-  const hintsArray = Array.isArray(q.hint) ? q.hint : [q.hint];
+  const rawHints = Array.isArray(q.hint) ? q.hint : (q.hint ? [q.hint] : []);
+  const hintsArray = rawHints.filter(h => h && String(h).trim() !== "");
   hintsContainer.allHints = hintsArray;
   
-  // ヒントがある場合は、既にヒントを開いたかどうかを確認
+  // ヒントが存在する場合のみ「最初のヒントを見る」ボタンを表示する
   if (hintsArray.length > 0) {
     // 既にヒントを開いたかどうかをサーバーから取得
     fetch(`/quiz/hintOpened/${encodeURIComponent(category)}/${encodeURIComponent(qid)}`, {
@@ -536,6 +592,8 @@ function openModal(category, qid, evt = null) {
     // ラベルも非表示にする
     const label = sadContainer.querySelector("label");
     if (label) label.style.display = "none";
+    // 起動状態に応じてボタン・ステータスを同期
+    syncSadControls();
   } else {
     sadContainer.style.display = "none";
     if (scenarioSelect) scenarioSelect.style.display = "block";
@@ -616,6 +674,7 @@ function openModal(category, qid, evt = null) {
     // 通常のFLAG形式の問題の場合、地図を非表示
     mapContainer.style.display = "none";
     answerInput.placeholder = "FLAG{...}";
+    answerInput.value = ""; // 前の問題で入力したフラグが残らないようにクリア
     selectedCoords.textContent = "";
     
     // 地図を破棄（メモリリーク防止）
@@ -739,72 +798,16 @@ export function closeModal() {
     });
   });
   
-  // Sad Server用のターミナルをクリーンアップ
-  const sadTerminal = document.getElementById("sad-terminal");
-  if (sadTerminal) {
-    sadTerminal.innerHTML = "";
-  }
-  const sadStartBtn = document.getElementById("sad-start-btn");
-  if (sadStartBtn) {
-    sadStartBtn.disabled = false;
-    sadStartBtn.textContent = "シナリオを開始";
-  }
-  
   // ラベルとセレクトボックスを再表示
   const sadContainer = document.getElementById("sad-terminal-container");
   const scenarioSelect = document.getElementById("sad-scenario-select");
   const label = sadContainer?.querySelector("label");
   if (scenarioSelect) scenarioSelect.style.display = "block";
   if (label) label.style.display = "block";
-  
-  // コンテナが起動している場合は停止
-  if (currentSadInstanceId && typeof currentSadInstanceId === 'string' && currentSadInstanceId.trim() !== '') {
-    const instanceIdToStop = currentSadInstanceId;
-    console.log(`🛑 コンテナ停止: ${instanceIdToStop}`);
-    
-    // Socket.io接続を切断
-    if (currentSadSocket) {
-      currentSadSocket.disconnect();
-      currentSadSocket = null;
-    }
-    
-    // instanceIdをクリア（リクエスト完了前にクリアして重複送信を防ぐ）
-    currentSadInstanceId = null;
-    
-    // サーバーにコンテナ停止をリクエスト
-    fetch("/sad/stop-sad", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ instanceId: instanceIdToStop }),
-    }).then(async res => {
-      if (res.ok) {
-        const data = await res.json();
-        console.log(`✅ コンテナ停止成功: ${instanceIdToStop}`, data);
-      } else {
-        // エラーレスポンスの内容を取得
-        let errorMessage = `HTTP ${res.status}`;
-        try {
-          const errorData = await res.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (e) {
-          // JSONパースに失敗した場合はステータステキストを使用
-          errorMessage = res.statusText || errorMessage;
-        }
-        console.error(`❌ コンテナ停止失敗: ${instanceIdToStop}`, errorMessage);
-      }
-    }).catch(err => {
-      console.error("❌ コンテナ停止エラー:", err);
-    });
-  } else if (currentSadInstanceId) {
-    // instanceIdが無効な形式の場合
-    console.warn(`⚠️ 無効なinstanceId: ${currentSadInstanceId}`);
-    currentSadInstanceId = null;
-    if (currentSadSocket) {
-      currentSadSocket.disconnect();
-      currentSadSocket = null;
-    }
-  }
-  
+
+  // Sad Server用: モーダルを閉じてもコンテナ・別ウィンドウは維持する。
+  // 停止は Destroy Server ボタンでのみ行う。
+
   //console.log("closeModal");
 }
 
@@ -1106,33 +1109,84 @@ document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("scoreRefresh");
   if (btn) btn.addEventListener("click", loadScore);
 
-  // Sad Server用のターミナル起動処理
-  const sadStartBtn = document.getElementById("sad-start-btn");
-  if (sadStartBtn) {
-    sadStartBtn.addEventListener("click", startSadScenario);
+  // Sad Server用のサーバー作成/破棄処理
+  const sadCreateBtn = document.getElementById("sad-create-btn");
+  if (sadCreateBtn) {
+    sadCreateBtn.addEventListener("click", createSadServer);
+  }
+  const sadDestroyBtn = document.getElementById("sad-destroy-btn");
+  if (sadDestroyBtn) {
+    sadDestroyBtn.addEventListener("click", () => destroySadServer());
   }
 });
 
-// Sad Server用のシナリオ起動
-async function startSadScenario() {
+// Sad Server用: ステータス表示ヘルパー
+function setSadStatus(message, isError) {
+  const statusEl = document.getElementById("sad-status");
+  if (!statusEl) return;
+  statusEl.textContent = message || "";
+  statusEl.style.color = isError ? "#ff8a80" : "#9fd3ff";
+}
+
+// Sad Server用: ボタン・ステータスを初期状態に戻す
+function resetSadControls() {
+  const createBtn = document.getElementById("sad-create-btn");
+  const destroyBtn = document.getElementById("sad-destroy-btn");
+  if (createBtn) {
+    createBtn.disabled = false;
+    createBtn.textContent = "Create Server";
+  }
+  if (destroyBtn) {
+    destroyBtn.disabled = true;
+    destroyBtn.textContent = "Destroy Server";
+  }
+  setSadStatus("");
+}
+
+// Sad Server用: 現在の起動状態にボタン・ステータスを同期する
+// （モーダルを再度開いたとき、起動済みなら Destroy を有効表示にする）
+function syncSadControls() {
+  const createBtn = document.getElementById("sad-create-btn");
+  const destroyBtn = document.getElementById("sad-destroy-btn");
+  if (currentSadInstanceId) {
+    if (createBtn) {
+      createBtn.disabled = true;
+      createBtn.textContent = "Server 起動中";
+    }
+    if (destroyBtn) {
+      destroyBtn.disabled = false;
+      destroyBtn.textContent = "Destroy Server";
+    }
+    setSadStatus(`サーバー起動中: ${currentSadInstanceId}（別ウィンドウのターミナルで操作してください）`);
+  } else {
+    resetSadControls();
+  }
+}
+
+// Create Server: コンテナを起動し、別ウィンドウでターミナルを開いて接続する
+async function createSadServer() {
   const scenarioSelect = document.getElementById("sad-scenario-select");
-  const terminalDiv = document.getElementById("sad-terminal");
-  const startBtn = document.getElementById("sad-start-btn");
-  
-  if (!scenarioSelect || !terminalDiv || !startBtn) {
+  const createBtn = document.getElementById("sad-create-btn");
+  const destroyBtn = document.getElementById("sad-destroy-btn");
+
+  if (!scenarioSelect || !createBtn || !destroyBtn) {
     console.error("Sad Server用の要素が見つかりません");
     return;
+  }
+
+  // 既にサーバーが起動している場合は先に破棄
+  if (currentSadInstanceId) {
+    await destroySadServer(true);
   }
 
   const scenarioId = scenarioSelect.value;
   console.log(`🚀 Sad Serverシナリオ起動: ${scenarioId}`);
 
-  // ボタンを無効化
-  startBtn.disabled = true;
-  startBtn.textContent = "起動中...";
+  createBtn.disabled = true;
+  createBtn.textContent = "起動中...";
+  setSadStatus("コンテナを起動しています...");
 
   try {
-    // サーバーにシナリオ起動をリクエスト
     const res = await fetch("/sad/start-sad", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1140,91 +1194,120 @@ async function startSadScenario() {
     });
 
     if (!res.ok) {
-      throw new Error(`サーバーエラー: ${res.status}`);
+      let msg = `サーバーエラー: ${res.status}`;
+      try {
+        const errData = await res.json();
+        msg = errData.error || errData.detail || msg;
+      } catch (e) { /* noop */ }
+      throw new Error(msg);
     }
 
     const { wsPath, instanceId } = await res.json();
     console.log(`✅ シナリオ起動成功: ${instanceId}, wsPath: ${wsPath}`);
 
-    // instanceIdを保存
     currentSadInstanceId = instanceId;
+    currentSadScenarioId = scenarioId;
+    currentSadWsPath = wsPath;
+    // リロード後も多重起動を防ぐため状態を永続化
+    saveSadState(instanceId, scenarioId, wsPath);
 
-    // ターミナルをクリア
-    terminalDiv.innerHTML = "";
-    
-    // xterm.jsでターミナル作成（スクロール設定を有効化）
-    const term = new Terminal({
-      scrollback: 10000, // スクロールバック行数（10000行まで）
-      cursorBlink: true,
-      fontSize: 14,
-      fontFamily: 'Consolas, "Courier New", monospace',
-      theme: {
-        background: '#000000',
-        foreground: '#ffffff'
-      }
-    });
-    term.open(terminalDiv);
-    term.write(`\r\n✅ シナリオ ${scenarioId} が起動されました\r\n`);
-    term.write(`WebSocket: ${wsPath}\r\n`);
-    term.write(`―`.repeat(50) + `\r\n\r\n`);
+    // 別ウィンドウでターミナルページを開く（固定名でリロード後も再取得可能に）
+    const url =
+      `/sad-terminal?instanceId=${encodeURIComponent(instanceId)}` +
+      `&wsPath=${encodeURIComponent(wsPath)}` +
+      `&scenarioId=${encodeURIComponent(scenarioId)}`;
+    const features = "width=900,height=600,menubar=no,toolbar=no,location=no,resizable=yes,scrollbars=yes";
+    const win = window.open(url, SAD_WINDOW_NAME, features);
 
-    // Socket.ioで接続（現在のホスト名を使用）
-    const currentHost = window.location.hostname;
-    const socketUrl = `http://${currentHost}:3333${wsPath}`;
-    const socket = io(socketUrl, {
-      path: "/socket.io",
-      transports: ["websocket", "polling"],
-      withCredentials: true,
-    });
+    if (!win) {
+      // ポップアップがブロックされた場合はコンテナを停止して通知
+      setSadStatus("ポップアップがブロックされました。ブラウザの設定で許可してください。", true);
+      await destroySadServer(true);
+      resetSadControls();
+      return;
+    }
 
-    // socketを保存
-    currentSadSocket = socket;
+    currentSadWindow = win;
+    try { win.focus(); } catch (e) { /* noop */ }
 
-    // 入力出力をバインド
-    term.onData((input) => socket.emit("input", input));
-    socket.on("output", (data) => {
-      term.write(data);
-      // 出力後に自動スクロール（次のフレームで実行）
-      setTimeout(() => {
-        term.scrollToBottom();
-      }, 0);
-    });
-
-    socket.on("connect", () => {
-      console.log("🟢 WebSocket接続成功");
-      term.write("\r\n🟢 接続完了\r\n\r\n");
-    });
-
-    socket.on("disconnect", () => {
-      console.log("🔴 WebSocket切断");
-      term.write("\r\n\r\n[🔴 セッション終了]\r\n");
-      startBtn.disabled = false;
-      startBtn.textContent = "シナリオを開始";
-      // 切断時にクリーンアップ
-      currentSadInstanceId = null;
-      currentSadSocket = null;
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error("❌ WebSocket接続エラー:", err);
-      term.write(`\r\n❌ 接続エラー: ${err.message}\r\n`);
-      startBtn.disabled = false;
-      startBtn.textContent = "シナリオを開始";
-    });
-
+    createBtn.textContent = "Server 起動中";
+    destroyBtn.disabled = false;
+    setSadStatus(`サーバー起動: ${instanceId}（別ウィンドウのターミナルで操作してください）`);
   } catch (error) {
     console.error("❌ シナリオ起動エラー:", error);
-    // XSS対策: innerHTMLの代わりに安全なDOM操作を使用
-    terminalDiv.textContent = "";
-    const errorP = document.createElement("p");
-    errorP.style.color = "red";
-    errorP.textContent = `エラー: ${error.message}`;
-    terminalDiv.appendChild(errorP);
-    startBtn.disabled = false;
-    startBtn.textContent = "シナリオを開始";
-    // エラー時もクリーンアップ
+    setSadStatus(`エラー: ${error.message}`, true);
     currentSadInstanceId = null;
+    currentSadWindow = null;
+    resetSadControls();
+  }
+}
+
+// Destroy Server: コンテナを停止し、ターミナルウィンドウを閉じる
+// silent=true の場合はステータス表示・ボタンリセットを行わない（内部呼び出し用）
+async function destroySadServer(silent) {
+  const instanceId = currentSadInstanceId;
+
+  // ターミナルウィンドウを閉じる。
+  // リロード後は参照が失われているため、固定名で再取得を試みる。
+  let win = currentSadWindow;
+  if ((!win || win.closed) && instanceId) {
+    try {
+      // 既存の同名ウィンドウがあれば参照を取得できる（無ければ空ウィンドウが返る）
+      win = window.open("", SAD_WINDOW_NAME);
+    } catch (e) { win = null; }
+  }
+  if (win && !win.closed) {
+    try {
+      win.postMessage({ type: "sad-disconnect" }, window.location.origin);
+    } catch (e) { /* noop */ }
+    try { win.close(); } catch (e) { /* noop */ }
+  }
+  currentSadWindow = null;
+
+  // 状態をクリア（重複停止を防ぐため先にクリア）
+  currentSadInstanceId = null;
+  currentSadScenarioId = null;
+  currentSadWsPath = null;
+  clearSadState();
+  if (currentSadSocket) {
+    try { currentSadSocket.disconnect(); } catch (e) { /* noop */ }
     currentSadSocket = null;
+  }
+
+  if (!instanceId || typeof instanceId !== "string" || instanceId.trim() === "") {
+    if (!silent) resetSadControls();
+    return;
+  }
+
+  if (!silent) {
+    setSadStatus("サーバーを停止しています...");
+    const destroyBtn = document.getElementById("sad-destroy-btn");
+    if (destroyBtn) destroyBtn.disabled = true;
+  }
+
+  try {
+    const res = await fetch("/sad/stop-sad", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ instanceId }),
+    });
+    if (res.ok) {
+      console.log(`✅ コンテナ停止成功: ${instanceId}`);
+      if (!silent) setSadStatus("サーバーを停止しました。");
+    } else {
+      let msg = `HTTP ${res.status}`;
+      try {
+        const errData = await res.json();
+        msg = errData.error || errData.message || msg;
+      } catch (e) { /* noop */ }
+      console.error(`❌ コンテナ停止失敗: ${instanceId}`, msg);
+      if (!silent) setSadStatus(`停止エラー: ${msg}`, true);
+    }
+  } catch (err) {
+    console.error("❌ コンテナ停止エラー:", err);
+    if (!silent) setSadStatus(`停止エラー: ${err.message}`, true);
+  } finally {
+    if (!silent) resetSadControls();
   }
 }
 
