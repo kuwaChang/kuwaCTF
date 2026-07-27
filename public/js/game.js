@@ -5,6 +5,8 @@ const CHEAT_ACHIEVEMENT_ID = "rpg_cheat";
 
 let stageTable = [];
 let shopItems = [];
+let spellTable = [];
+let elementTable = {};
 let runtimeSaveSnapshot = null;
 let runtimeSigSnapshot = null;
 let isInternalSaveWrite = false;
@@ -17,7 +19,9 @@ const CHEAT_REPORT_COOLDOWN_MS = 30 * 1000;
 // レベルアップ関連設定
 const MAX_LEVEL = 99;
 // レベルアップ時に上昇するステータス量
-const LEVEL_GROWTH = { maxHp: 12, atk: 3, def: 2, lucky: 1 };
+const LEVEL_GROWTH = { maxHp: 12, maxMp: 4, atk: 3, def: 2, lucky: 1 };
+const AFFINITY_SUPER = 1.5;
+const AFFINITY_RESIST = 0.65;
 
 // 次のレベルまでに必要な経験値。レベルが上がるほど必要量が増加する。
 function expRequiredForLevel(level) {
@@ -45,6 +49,8 @@ function createDefaultState() {
       exp: 0,
       maxHp: 120,
       hp: 120,
+      maxMp: 40,
+      mp: 30,
       atk: 20,
       def: 12,
       lucky: 5,
@@ -72,6 +78,11 @@ let state = null;
 // render()はenemyAreaのHTMLを作り直すため、演出はDOM再構築後に実行する必要がある。
 let pendingEffects = [];
 
+// プレイヤー行動後、敵が反撃するまでの待ち時間（攻撃演出が見える程度）
+const ENEMY_COUNTER_DELAY_MS = 700;
+// 待ち時間中の連打・二重処理を防ぐ
+let battleBusy = false;
+
 const ui = {
   playerSummary: document.getElementById("playerSummary"),
   enemyArea: document.getElementById("enemyArea"),
@@ -85,9 +96,12 @@ const ui = {
   attackBtn: document.getElementById("attackBtn"),
   guardBtn: document.getElementById("guardBtn"),
   nextEnemyBtn: document.getElementById("nextEnemyBtn"),
+  magicActions: document.getElementById("magicActions"),
   stageClearActions: document.getElementById("stageClearActions"),
   playerHpFill: document.getElementById("playerHpFill"),
-  playerHpText: document.getElementById("playerHpText")
+  playerHpText: document.getElementById("playerHpText"),
+  playerMpFill: document.getElementById("playerMpFill"),
+  playerMpText: document.getElementById("playerMpText")
 };
 
 init();
@@ -118,6 +132,8 @@ async function loadGameData() {
   }
   stageTable = data.stages;
   shopItems = Array.isArray(data?.shopItems) ? data.shopItems : [];
+  spellTable = Array.isArray(data?.spells) ? data.spells : [];
+  elementTable = data?.elements && typeof data.elements === "object" ? data.elements : {};
 }
 
 function bindEvents() {
@@ -136,6 +152,9 @@ function bindEvents() {
   }
   if (ui.nextEnemyBtn) {
     ui.nextEnemyBtn.addEventListener("click", onNextEnemy);
+  }
+  if (ui.magicActions) {
+    ui.magicActions.addEventListener("click", onMagicClick);
   }
   if (ui.stageSelection) {
     ui.stageSelection.addEventListener("click", onStageSelectionClick);
@@ -218,6 +237,7 @@ async function syncGpFromSolvedProblems() {
 
 function onAttack() {
   checkAndHandleLocalTamper("local_storage_attack");
+  if (battleBusy) return;
   if (state.player.hp <= 0) {
     pushLog("あなたは戦闘不能です。次の敵へ進んで再挑戦してください。");
     render();
@@ -233,6 +253,7 @@ function onAttack() {
 
 function onGuard() {
   checkAndHandleLocalTamper("local_storage_guard");
+  if (battleBusy) return;
   if (state.player.hp <= 0 || state.enemyHp <= 0) {
     pushLog("今は防御できません。");
     render();
@@ -242,8 +263,48 @@ function onGuard() {
   runBattleTurn("guard");
 }
 
+function onMagicClick(event) {
+  const btn = event.target.closest("[data-spell]");
+  if (!btn) return;
+  onMagic(btn.dataset.spell);
+}
+
+function onMagic(spellId) {
+  checkAndHandleLocalTamper("local_storage_magic");
+  if (battleBusy) return;
+  if (state.player.hp <= 0) {
+    pushLog("あなたは戦闘不能です。次の敵へ進んで再挑戦してください。");
+    render();
+    return;
+  }
+  if (state.enemyHp <= 0) {
+    pushLog("敵はすでに倒れています。次の敵へ進みましょう。");
+    render();
+    return;
+  }
+  const spell = getSpellById(spellId);
+  if (!spell) {
+    pushLog("未知の魔法です。");
+    render();
+    return;
+  }
+  if (!isSpellUnlocked(spell.id)) {
+    pushLog(`${spell.name} はまだ覚えていない。魔導書を購入しよう。`);
+    render();
+    return;
+  }
+  const mpCost = Math.max(0, Math.floor(Number(spell.mpCost) || 0));
+  if ((Number(state.player.mp) || 0) < mpCost) {
+    pushLog(`MP不足: ${spell.name} は MP ${mpCost} 必要（現在 ${state.player.mp}）。`);
+    render();
+    return;
+  }
+  runBattleTurn("magic", spellId);
+}
+
 function onNextEnemy() {
   checkAndHandleLocalTamper("local_storage_next_enemy");
+  if (battleBusy) return;
   if (state.enemyHp > 0 && state.player.hp > 0) {
     pushLog("敵を倒してから次へ進んでください。");
     render();
@@ -263,20 +324,41 @@ function onNextEnemy() {
   state.enemyHp = enemy.maxHp;
   state.enemyActionCount = getEnemyActionInterval(enemy);
   state.player.hp = state.player.maxHp;
+  state.player.mp = state.player.maxMp;
   state.player.guard = false;
-  pushLog(`次の敵「${enemy.name}」が現れた。HPが全回復した。`);
+  pushLog(`次の敵「${enemy.name}」が現れた。HPとMPが全回復した。`);
   saveState();
   render();
 }
 
-function runBattleTurn(action) {
+function runBattleTurn(action, spellId = null) {
+  if (battleBusy) return;
+  battleBusy = true;
+
   const enemy = getCurrentEnemy();
   const playerStats = effectivePlayerStats();
-  playerAction(action, enemy, playerStats);
-  if (state.enemyHp > 0 && state.player.hp > 0) {
-    tickEnemyAction(enemy, playerStats);
+  playerAction(action, enemy, playerStats, spellId);
+
+  // プレイヤーの攻撃で撃破した場合は間を置かず決着処理へ
+  if (state.enemyHp <= 0) {
+    finishBattleTurn(enemy);
+    return;
   }
 
+  // プレイヤー行動の結果・演出を先に見せてから、少し間を置いて敵の行動へ
+  saveState();
+  render();
+  flushEffects();
+
+  setTimeout(() => {
+    if (state.enemyHp > 0 && state.player.hp > 0) {
+      tickEnemyAction(enemy, playerStats);
+    }
+    finishBattleTurn(enemy);
+  }, ENEMY_COUNTER_DELAY_MS);
+}
+
+function finishBattleTurn(enemy) {
   if (state.enemyHp <= 0) {
     state.enemyHp = 0;
     state.gp += enemy.reward;
@@ -293,15 +375,20 @@ function runBattleTurn(action) {
   }
 
   state.player.guard = false;
+  battleBusy = false;
   saveState();
   render();
   flushEffects();
 }
 
-function playerAction(action, enemy, stats) {
+function playerAction(action, enemy, stats, spellId = null) {
   if (action === "guard") {
     pushLog("防御体勢に入った。受けるダメージを軽減する。");
     pendingEffects.push({ type: "guard" });
+    return;
+  }
+  if (action === "magic") {
+    castSpell(spellId, enemy, stats);
     return;
   }
   const baseDmg = calcDamage(stats.atk, enemy.def);
@@ -314,6 +401,86 @@ function playerAction(action, enemy, stats) {
     pushLog(`あなたの攻撃: ${enemy.name}に ${dmg} ダメージ。`);
   }
   pendingEffects.push({ type: "enemyHit", dmg, critical });
+}
+
+function castSpell(spellId, enemy, stats) {
+  const spell = getSpellById(spellId);
+  if (!spell || !isSpellUnlocked(spell.id)) {
+    pushLog("魔法の詠唱に失敗した。");
+    return;
+  }
+  const mpCost = Math.max(0, Math.floor(Number(spell.mpCost) || 0));
+  if ((Number(state.player.mp) || 0) < mpCost) {
+    pushLog(`MP不足で ${spell.name} を唱えられなかった。`);
+    return;
+  }
+  state.player.mp -= mpCost;
+
+  const affinity = getElementAffinity(spell.element, enemy.element);
+  const baseDmg = calcSpellDamage(spell.power, stats.atk, enemy.def);
+  const critical = isCriticalHit(stats.lucky);
+  let dmg = Math.floor(baseDmg * affinity.multiplier);
+  if (critical) dmg = Math.floor(dmg * 1.5);
+  dmg = Math.max(1, dmg);
+  state.enemyHp -= dmg;
+
+  const elementLabel = getElementLabel(spell.element);
+  const affinityText = affinity.multiplier > 1
+    ? "効果抜群！"
+    : affinity.multiplier < 1
+      ? "今ひとつ…"
+      : "";
+  const critText = critical ? "クリティカル！ " : "";
+  pushLog(
+    `${critText}${spell.name}（${elementLabel}）: ${enemy.name}に ${dmg} ダメージ。` +
+      ` MP -${mpCost}${affinityText ? ` ${affinityText}` : ""}`
+  );
+  pendingEffects.push({
+    type: "enemyHit",
+    dmg,
+    critical,
+    element: spell.element,
+    affinity: affinity.tag
+  });
+}
+
+function getSpellById(spellId) {
+  return spellTable.find((s) => s.id === spellId) || null;
+}
+
+function isSpellUnlocked(spellId) {
+  return shopItems.some(
+    (item) => item.slot === "spellbook" && item.unlocks === spellId && state.inventory.includes(item.id)
+  );
+}
+
+function getUnlockedSpells() {
+  return spellTable.filter((spell) => isSpellUnlocked(spell.id));
+}
+
+function getElementLabel(elementId) {
+  return elementTable[elementId]?.label || elementId || "無";
+}
+
+function getElementAffinity(attackElement, defendElement) {
+  const atk = elementTable[attackElement];
+  if (!atk || !defendElement) {
+    return { multiplier: 1, tag: "normal" };
+  }
+  if (atk.strong === defendElement) {
+    return { multiplier: AFFINITY_SUPER, tag: "super" };
+  }
+  if (atk.weak === defendElement) {
+    return { multiplier: AFFINITY_RESIST, tag: "resist" };
+  }
+  return { multiplier: 1, tag: "normal" };
+}
+
+function calcSpellDamage(power, attackerAtk, defenderDef) {
+  const spellPower = Math.max(0, Math.floor(Number(power) || 0));
+  const base = spellPower + Math.floor(attackerAtk * 0.25) - Math.floor(defenderDef * 0.3);
+  const spread = Math.floor(Math.random() * 6);
+  return Math.max(1, base + spread);
 }
 
 // luckyの値がそのままクリティカル発生率(%)になる（上限100%）
@@ -395,19 +562,22 @@ function levelUp() {
   state.player.level += 1;
   state.player.maxHp += LEVEL_GROWTH.maxHp;
   state.player.hp += LEVEL_GROWTH.maxHp;
+  state.player.maxMp += LEVEL_GROWTH.maxMp;
+  state.player.mp += LEVEL_GROWTH.maxMp;
   state.player.atk += LEVEL_GROWTH.atk;
   state.player.def += LEVEL_GROWTH.def;
   state.player.lucky += LEVEL_GROWTH.lucky;
   pushLog(
     `🎉 レベルアップ！ Lv${state.player.level} になった。` +
-      `HP+${LEVEL_GROWTH.maxHp} ATK+${LEVEL_GROWTH.atk} DEF+${LEVEL_GROWTH.def} LUCKY+${LEVEL_GROWTH.lucky}`
+      `HP+${LEVEL_GROWTH.maxHp} MP+${LEVEL_GROWTH.maxMp} ATK+${LEVEL_GROWTH.atk} DEF+${LEVEL_GROWTH.def} LUCKY+${LEVEL_GROWTH.lucky}`
   );
 }
 
 const SHOP_SLOTS = [
   { slot: "weapon", label: "武器" },
   { slot: "armor", label: "防具" },
-  { slot: "accessory", label: "装飾" }
+  { slot: "accessory", label: "装飾" },
+  { slot: "spellbook", label: "魔導書" }
 ];
 
 function renderShop() {
@@ -431,14 +601,28 @@ function renderShop() {
       const card = document.createElement("div");
       card.className = "shop-item";
       const owned = state.inventory.includes(item.id);
-      const equipped = state.equipment[item.slot] === item.id;
-      card.innerHTML = `
-        <strong>${item.name}</strong><br>
-        費用: ${item.cost} GP<br>
-        補正: ATK ${signed(item.atk)} / DEF ${signed(item.def)} / LUCKY ${signed(item.lucky ?? 0)}<br>
-        <button data-buy="${item.id}" ${owned ? "disabled" : ""}>${owned ? "購入済み" : "購入"}</button>
-        <button data-equip="${item.id}" ${owned ? "" : "disabled"}>${equipped ? "装備中" : "装備"}</button>
-      `;
+      if (slot === "spellbook") {
+        const spell = getSpellById(item.unlocks);
+        const spellName = spell ? spell.name : item.unlocks;
+        const elementLabel = spell ? getElementLabel(spell.element) : "-";
+        const mpCost = spell ? spell.mpCost : "-";
+        const power = spell ? spell.power : "-";
+        card.innerHTML = `
+          <strong>${item.name}</strong><br>
+          費用: ${item.cost} GP<br>
+          解禁: ${spellName}（${elementLabel}） MP ${mpCost} / 威力 ${power}<br>
+          <button data-buy="${item.id}" ${owned ? "disabled" : ""}>${owned ? "習得済み" : "購入"}</button>
+        `;
+      } else {
+        const equipped = state.equipment[item.slot] === item.id;
+        card.innerHTML = `
+          <strong>${item.name}</strong><br>
+          費用: ${item.cost} GP<br>
+          補正: ATK ${signed(item.atk)} / DEF ${signed(item.def)} / LUCKY ${signed(item.lucky ?? 0)}<br>
+          <button data-buy="${item.id}" ${owned ? "disabled" : ""}>${owned ? "購入済み" : "購入"}</button>
+          <button data-equip="${item.id}" ${owned ? "" : "disabled"}>${equipped ? "装備中" : "装備"}</button>
+        `;
+      }
       grid.appendChild(card);
     });
     group.appendChild(grid);
@@ -466,7 +650,13 @@ function buyItem(itemId) {
   }
   state.gp -= item.cost;
   state.inventory.push(item.id);
-  pushLog(`${item.name} を購入した。`);
+  if (item.slot === "spellbook") {
+    const spell = getSpellById(item.unlocks);
+    const spellName = spell ? spell.name : item.unlocks;
+    pushLog(`${item.name} を購入し、${spellName} を覚えた！`);
+  } else {
+    pushLog(`${item.name} を購入した。`);
+  }
   saveState();
   render();
 }
@@ -475,7 +665,7 @@ function equipItem(itemId) {
   checkAndHandleLocalTamper("local_storage_equip");
   if (!state.inventory.includes(itemId)) return;
   const item = shopItems.find((i) => i.id === itemId);
-  if (!item) return;
+  if (!item || item.slot === "spellbook") return;
   state.equipment[item.slot] = item.id;
   pushLog(`${item.name} を装備した。`);
   saveState();
@@ -485,6 +675,7 @@ function equipItem(itemId) {
 function effectivePlayerStats() {
   const stats = {
     maxHp: state.player.maxHp,
+    maxMp: state.player.maxMp,
     atk: state.player.atk,
     def: state.player.def,
     lucky: state.player.lucky ?? 0
@@ -493,8 +684,8 @@ function effectivePlayerStats() {
     if (!itemId) return;
     const item = shopItems.find((i) => i.id === itemId);
     if (!item) return;
-    stats.atk += item.atk;
-    stats.def += item.def;
+    stats.atk += item.atk || 0;
+    stats.def += item.def || 0;
     stats.lucky += item.lucky ?? 0;
   });
   return stats;
@@ -507,7 +698,7 @@ function flushEffects() {
   pendingEffects = [];
   effects.forEach((fx) => {
     if (fx.type === "enemyHit") {
-      playEnemyHitEffect(fx.dmg, fx.critical);
+      playEnemyHitEffect(fx.dmg, fx.critical, fx.element, fx.affinity);
     } else if (fx.type === "playerHit") {
       playPlayerHitEffect(fx.dmg, fx.guarded);
     } else if (fx.type === "guard") {
@@ -629,7 +820,7 @@ function playGuardSound() {
 }
 
 // 敵への攻撃命中演出（斬撃・被弾フラッシュ・シェイク・ダメージ数値）
-function playEnemyHitEffect(dmg, critical) {
+function playEnemyHitEffect(dmg, critical, element = null, affinity = "normal") {
   const wrap = ui.enemyArea?.querySelector(".enemy-visual-wrap");
   const image = ui.enemyArea?.querySelector(".enemy-image");
   if (!wrap) return;
@@ -638,9 +829,31 @@ function playEnemyHitEffect(dmg, critical) {
   playAttackSound(critical);
 
   const slash = document.createElement("div");
-  slash.className = "fx-slash" + (critical ? " critical" : "");
+  slash.className = "fx-slash" + (critical ? " critical" : "") + (element ? ` element-${element}` : "");
   wrap.appendChild(slash);
   removeAfter(slash, critical ? 650 : 480);
+
+  if (element) {
+    const burst = document.createElement("div");
+    burst.className = `fx-spell-burst element-${element}`;
+    burst.textContent = getElementLabel(element);
+    wrap.appendChild(burst);
+    removeAfter(burst, 700);
+  }
+
+  if (affinity === "super") {
+    const affinityFx = document.createElement("div");
+    affinityFx.className = "fx-affinity super";
+    affinityFx.textContent = "効果抜群！";
+    wrap.appendChild(affinityFx);
+    removeAfter(affinityFx, 900);
+  } else if (affinity === "resist") {
+    const affinityFx = document.createElement("div");
+    affinityFx.className = "fx-affinity resist";
+    affinityFx.textContent = "今ひとつ…";
+    wrap.appendChild(affinityFx);
+    removeAfter(affinityFx, 900);
+  }
 
   if (critical) {
     const burst = document.createElement("div");
@@ -718,11 +931,17 @@ function render() {
   if (ui.playerSummary) {
     const playerHp = Math.max(0, state.player.hp);
     const playerHpPercent = Math.max(0, Math.min(100, Math.round((playerHp / stats.maxHp) * 100)));
+    const playerMp = Math.max(0, Number(state.player.mp) || 0);
+    const playerMpPercent = Math.max(0, Math.min(100, Math.round((playerMp / Math.max(1, stats.maxMp)) * 100)));
     const atMaxLevel = state.player.level >= MAX_LEVEL;
     const expNow = Math.max(0, Number(state.player.exp) || 0);
     const expNeed = expRequiredForLevel(state.player.level);
     const expPercent = atMaxLevel ? 100 : Math.max(0, Math.min(100, Math.round((expNow / expNeed) * 100)));
     const expValueText = atMaxLevel ? "MAX" : `${expNow} / ${expNeed}`;
+    const unlockedSpells = getUnlockedSpells();
+    const spellSummary = unlockedSpells.length > 0
+      ? unlockedSpells.map((s) => `${s.name}(${getElementLabel(s.element)})`).join(" / ")
+      : "未習得（ショップで魔導書を購入）";
     const statRow = (label, value, max, cls) => {
       const percent = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
       return `
@@ -749,6 +968,11 @@ function render() {
             <span class="player-stat-value">${playerHp} / ${stats.maxHp}</span>
           </div>
           <div class="player-stat-row">
+            <span class="player-stat-label">MP</span>
+            <div class="player-stat-bar"><div class="player-stat-fill mp" style="width: ${playerMpPercent}%;"></div></div>
+            <span class="player-stat-value">${playerMp} / ${stats.maxMp}</span>
+          </div>
+          <div class="player-stat-row">
             <span class="player-stat-label">EXP</span>
             <div class="player-stat-bar"><div class="player-stat-fill exp" style="width: ${expPercent}%;"></div></div>
             <span class="player-stat-value">${expValueText}</span>
@@ -761,6 +985,7 @@ function render() {
             <span class="player-equip-chip">防具: ${equipName("armor")}</span>
             <span class="player-equip-chip">装飾: ${equipName("accessory")}</span>
           </div>
+          <div class="player-spell-summary">魔法: ${spellSummary}</div>
         </div>
       </div>
     `;
@@ -770,6 +995,8 @@ function render() {
     const enemyHp = Math.max(0, state.enemyHp);
     const hpPercent = Math.max(0, Math.min(100, Math.round((enemyHp / enemy.maxHp) * 100)));
     const enemyActionCount = Math.max(0, Number(state.enemyActionCount ?? getEnemyActionInterval(enemy)));
+    const enemyElement = enemy.element || null;
+    const enemyElementLabel = getElementLabel(enemyElement);
     const enemyVisual = enemy.image
       ? `<img class="enemy-image" src="${enemy.image}" alt="${enemy.name}">`
       : `<div class="enemy-image-placeholder">${enemy.name}</div>`;
@@ -779,6 +1006,7 @@ function render() {
         <div class="enemy-name">${enemy.name}</div>
         <div class="enemy-visual-wrap">
           <div class="enemy-action-count">行動 ${enemyActionCount}</div>
+          ${enemyElement ? `<div class="enemy-element-badge element-${enemyElement}">${enemyElementLabel}</div>` : ""}
           ${enemyVisual}
         </div>
         <div class="enemy-hp-wrap">
@@ -787,7 +1015,7 @@ function render() {
           </div>
           <div class="enemy-hp-text">HP: ${enemyHp} / ${enemy.maxHp}</div>
         </div>
-        <div class="enemy-meta">ATK: ${enemy.atk} / DEF: ${enemy.def}</div>
+        <div class="enemy-meta">ATK: ${enemy.atk} / DEF: ${enemy.def}${enemyElement ? ` / 属性: ${enemyElementLabel}` : ""}</div>
         撃破報酬: ${enemy.reward} GP / EXP ${getEnemyExp(enemy)}
       </div>
     `;
@@ -802,18 +1030,20 @@ function render() {
   const stageCleared = isStageCleared(stage.id);
   const battleOngoing = state.enemyHp > 0 && state.player.hp > 0;
   if (ui.attackBtn) {
-    ui.attackBtn.disabled = !battleOngoing;
+    ui.attackBtn.disabled = !battleOngoing || battleBusy;
   }
   if (ui.guardBtn) {
-    ui.guardBtn.disabled = !battleOngoing;
+    ui.guardBtn.disabled = !battleOngoing || battleBusy;
   }
   if (ui.nextEnemyBtn) {
     // 戦闘決着（敵撃破 or 敗北）まで押せない。クリア後も周回できるよう有効のまま。
-    ui.nextEnemyBtn.disabled = battleOngoing;
+    ui.nextEnemyBtn.disabled = battleOngoing || battleBusy;
   }
   if (ui.stageClearActions) {
     ui.stageClearActions.classList.toggle("visible", stageCleared);
   }
+
+  renderMagicActions(battleOngoing);
 
   if (ui.battleLog) {
     ui.battleLog.textContent = state.log.slice(-3).join("\n");
@@ -825,9 +1055,41 @@ function render() {
     ui.playerHpFill.style.background = hpBarColor(hpPercent);
     ui.playerHpText.textContent = `${hp} / ${stats.maxHp}`;
   }
+  if (ui.playerMpFill && ui.playerMpText) {
+    const mp = Math.max(0, Number(state.player.mp) || 0);
+    const mpPercent = Math.max(0, Math.min(100, Math.round((mp / Math.max(1, stats.maxMp)) * 100)));
+    ui.playerMpFill.style.width = `${mpPercent}%`;
+    ui.playerMpText.textContent = `${mp} / ${stats.maxMp}`;
+  }
   renderGrowthInfo();
   renderShop();
   renderStageSelection();
+}
+
+function renderMagicActions(battleOngoing) {
+  if (!ui.magicActions) return;
+  const unlocked = getUnlockedSpells();
+  if (unlocked.length === 0) {
+    ui.magicActions.innerHTML = `<p class="magic-hint">魔導書をショップで購入すると、ここで魔法が使えるようになります。相性: 炎→風→土→水→炎</p>`;
+    return;
+  }
+  const currentMp = Math.max(0, Number(state.player.mp) || 0);
+  ui.magicActions.innerHTML = `
+    <div class="magic-actions-label">魔法</div>
+    <div class="magic-actions-grid">
+      ${unlocked.map((spell) => {
+        const cost = Math.max(0, Math.floor(Number(spell.mpCost) || 0));
+        const canCast = battleOngoing && !battleBusy && currentMp >= cost;
+        const affinity = getElementAffinity(spell.element, getCurrentEnemy().element);
+        const tip = affinity.tag === "super" ? "効果抜群" : affinity.tag === "resist" ? "今ひとつ" : "相性普通";
+        return `
+          <button class="magic-btn element-${spell.element}" data-spell="${spell.id}" ${canCast ? "" : "disabled"} title="${spell.description || ""} / ${tip}">
+            <span class="magic-btn-name">${spell.name}</span>
+            <span class="magic-btn-meta">${getElementLabel(spell.element)} · MP ${cost}</span>
+          </button>`;
+      }).join("")}
+    </div>
+  `;
 }
 
 function renderGrowthInfo() {
@@ -843,7 +1105,7 @@ function renderGrowthInfo() {
       <span class="growth-chip">EXP ${atMaxLevel ? "MAX" : `${expNow} / ${expNeed}`}</span>
       <span class="growth-chip">${atMaxLevel ? "最大レベル到達" : `次のレベルまで ${remaining}`}</span>
     </div>
-    <p class="growth-bonus">レベルアップ毎の上昇: HP +${LEVEL_GROWTH.maxHp} / ATK +${LEVEL_GROWTH.atk} / DEF +${LEVEL_GROWTH.def} / LUCKY +${LEVEL_GROWTH.lucky}</p>
+    <p class="growth-bonus">レベルアップ毎の上昇: HP +${LEVEL_GROWTH.maxHp} / MP +${LEVEL_GROWTH.maxMp} / ATK +${LEVEL_GROWTH.atk} / DEF +${LEVEL_GROWTH.def} / LUCKY +${LEVEL_GROWTH.lucky}</p>
   `;
 }
 
@@ -1120,6 +1382,13 @@ function mergeStateWithDefaults(parsed, defaultState) {
   if (!Number.isFinite(merged.enemyActionCount) || merged.enemyActionCount < 0) {
     merged.enemyActionCount = getEnemyActionInterval(curEnemy);
   }
+  if (!Number.isFinite(merged.player.maxMp) || merged.player.maxMp < 1) {
+    merged.player.maxMp = defaultState.player.maxMp;
+  }
+  if (!Number.isFinite(merged.player.mp) || merged.player.mp < 0) {
+    merged.player.mp = merged.player.maxMp;
+  }
+  merged.player.mp = Math.min(merged.player.mp, merged.player.maxMp);
   return merged;
 }
 
@@ -1169,6 +1438,7 @@ function selectStage(stageId) {
   state.enemyHp = stage.enemies[state.currentEnemyIndex].maxHp;
   state.enemyActionCount = getEnemyActionInterval(stage.enemies[state.currentEnemyIndex]);
   state.player.hp = state.player.maxHp;
+  state.player.mp = state.player.maxMp;
   state.player.guard = false;
   pushLog(`${stage.name} を選択。`);
   saveState();

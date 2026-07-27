@@ -1,4 +1,76 @@
 {
+  "elements": {
+    "fire": { "label": "炎", "strong": "wind", "weak": "water" },
+    "water": { "label": "水", "strong": "fire", "weak": "earth" },
+    "wind": { "label": "風", "strong": "earth", "weak": "fire" },
+    "earth": { "label": "土", "strong": "water", "weak": "wind" }
+  },
+  "spells": [
+    {
+      "id": "firebolt",
+      "name": "ファイアボルト",
+      "element": "fire",
+      "mpCost": 8,
+      "power": 32,
+      "description": "小さな炎弾を放つ初級炎魔法。"
+    },
+    {
+      "id": "aqua",
+      "name": "アクア",
+      "element": "water",
+      "mpCost": 8,
+      "power": 32,
+      "description": "水の弾を飛ばす初級水魔法。"
+    },
+    {
+      "id": "gust",
+      "name": "ガスト",
+      "element": "wind",
+      "mpCost": 8,
+      "power": 32,
+      "description": "鋭い風を巻き起こす初級風魔法。"
+    },
+    {
+      "id": "stone",
+      "name": "ストーン",
+      "element": "earth",
+      "mpCost": 8,
+      "power": 32,
+      "description": "岩塊を投げつける初級土魔法。"
+    },
+    {
+      "id": "flare",
+      "name": "フレア",
+      "element": "fire",
+      "mpCost": 20,
+      "power": 68,
+      "description": "激しい業火で敵を包む上級炎魔法。"
+    },
+    {
+      "id": "blizzard",
+      "name": "ブリザード",
+      "element": "water",
+      "mpCost": 20,
+      "power": 68,
+      "description": "氷雪の嵐を起こす上級水魔法。"
+    },
+    {
+      "id": "tempest",
+      "name": "テンペスト",
+      "element": "wind",
+      "mpCost": 20,
+      "power": 68,
+      "description": "暴風の刃で切り裂く上級風魔法。"
+    },
+    {
+      "id": "quake",
+      "name": "クエイク",
+      "element": "earth",
+      "mpCost": 20,
+      "power": 68,
+      "description": "大地を揺らして衝撃を与える上級土魔法。"
+    }
+  ],
   "stages": [
     {
       "id": 1,
@@ -11,9 +83,10 @@
           "maxHp": 90,
           "atk": 30,
           "def": 10,
+          "element": "water",
           "actionInterval": 2,
-          "reward": 60,
-          "exp": 40,
+          "reward": 15,
+          "exp": 30,
           "image": "/images/script_slime.png"
         },
         {
@@ -22,9 +95,10 @@
           "maxHp": 120,
           "atk": 45,
           "def": 15,
+          "element": "earth",
           "actionInterval": 2,
-          "reward": 70,
-          "exp": 55,
+          "reward": 20,
+          "exp": 40,
           "image": "/images/log_hound.png"
         }
       ]
@@ -40,9 +114,10 @@
           "maxHp": 150,
           "atk": 55,
           "def": 15,
+          "element": "wind",
           "actionInterval": 2,
-          "reward": 90,
-          "exp": 70,
+          "reward": 25,
+          "exp": 50,
           "image": "/images/port_goblin.png"
         },
         {
@@ -51,9 +126,10 @@
           "maxHp": 165,
           "atk": 65,
           "def": 15,
+          "element": "wind",
           "actionInterval": 2,
-          "reward": 100,
-          "exp": 80,
+          "reward": 30,
+          "exp": 60,
           "image": "/images/header_bat.png"
         },
         {
@@ -62,9 +138,10 @@
           "maxHp": 180,
           "atk": 75,
           "def": 15,
+          "element": "earth",
           "actionInterval": 2,
-          "reward": 110,
-          "exp": 90,
+          "reward": 40,
+          "exp": 70,
           "image": "/images/query_worm.png"
         }
       ]
@@ -80,9 +157,10 @@
           "maxHp": 230,
           "atk": 85,
           "def": 18,
+          "element": "fire",
           "actionInterval": 2,
-          "reward": 140,
-          "exp": 110,
+          "reward": 55,
+          "exp": 90,
           "image": "/images/caesar_wisp.png"
         },
         {
@@ -91,9 +169,10 @@
           "maxHp": 210,
           "atk": 95,
           "def": 18,
+          "element": "earth",
           "actionInterval": 2,
-          "reward": 155,
-          "exp": 125,
+          "reward": 65,
+          "exp": 100,
           "image": "/images/base64_mimic.png"
         },
         {
@@ -102,9 +181,10 @@
           "maxHp": 235,
           "atk": 105,
           "def": 21,
-          "actionInterval": 2,
-          "reward": 170,
-          "exp": 140,
+          "element": "earth",
+          "actionInterval": 1,
+          "reward": 80,
+          "exp": 110,
           "image": "/images/hash_knight.png"
         }
       ]
@@ -120,9 +200,10 @@
           "maxHp": 260,
           "atk": 115,
           "def": 23,
+          "element": "water",
           "actionInterval": 2,
-          "reward": 210,
-          "exp": 170,
+          "reward": 100,
+          "exp": 130,
           "image": "/images/sql_injector.png"
         },
         {
@@ -131,9 +212,10 @@
           "maxHp": 240,
           "atk": 125,
           "def": 20,
+          "element": "wind",
           "actionInterval": 1.8,
-          "reward": 225,
-          "exp": 185,
+          "reward": 120,
+          "exp": 140,
           "image": "/images/xss_phantom.png"
         },
         {
@@ -142,9 +224,10 @@
           "maxHp": 310,
           "atk": 135,
           "def": 27,
+          "element": "earth",
           "actionInterval": 2,
-          "reward": 240,
-          "exp": 200,
+          "reward": 140,
+          "exp": 160,
           "image": "/images/buffer_ogre.png"
         },
         {
@@ -153,9 +236,10 @@
           "maxHp": 280,
           "atk": 145,
           "def": 24,
+          "element": "fire",
           "actionInterval": 1.8,
-          "reward": 260,
-          "exp": 220,
+          "reward": 160,
+          "exp": 180,
           "image": "/images/session_reaper.png"
         }
       ]
@@ -171,9 +255,10 @@
           "maxHp": 360,
           "atk": 155,
           "def": 30,
+          "element": "fire",
           "actionInterval": 1.8,
-          "reward": 320,
-          "exp": 270,
+          "reward": 200,
+          "exp": 220,
           "image": "/images/forensic_dragon.png"
         },
         {
@@ -182,9 +267,10 @@
           "maxHp": 390,
           "atk": 165,
           "def": 32,
+          "element": "wind",
           "actionInterval": 1.8,
-          "reward": 350,
-          "exp": 300,
+          "reward": 220,
+          "exp": 240,
           "image": "/images/reverse_engineer.png"
         },
         {
@@ -193,9 +279,10 @@
           "maxHp": 420,
           "atk": 175,
           "def": 34,
+          "element": "fire",
           "actionInterval": 1.6,
-          "reward": 390,
-          "exp": 340,
+          "reward": 240,
+          "exp": 260,
           "image": "/images/zero_day_demon.png"
         },
         {
@@ -204,8 +291,9 @@
           "maxHp": 500,
           "atk": 185,
           "def": 38,
+          "element": "earth",
           "actionInterval": 1.7,
-          "reward": 450,
+          "reward": 260,
           "exp": 400,
           "image": "/images/root_guardian.png"
         }
@@ -294,6 +382,62 @@
       "def": 0,
       "lucky": 20,
       "cost": 500
+    },
+    {
+      "id": "tome_firebolt",
+      "slot": "spellbook",
+      "name": "炎の魔導書",
+      "unlocks": "firebolt",
+      "cost": 90
+    },
+    {
+      "id": "tome_aqua",
+      "slot": "spellbook",
+      "name": "水の魔導書",
+      "unlocks": "aqua",
+      "cost": 90
+    },
+    {
+      "id": "tome_gust",
+      "slot": "spellbook",
+      "name": "風の魔導書",
+      "unlocks": "gust",
+      "cost": 90
+    },
+    {
+      "id": "tome_stone",
+      "slot": "spellbook",
+      "name": "大地の魔導書",
+      "unlocks": "stone",
+      "cost": 90
+    },
+    {
+      "id": "tome_flare",
+      "slot": "spellbook",
+      "name": "業火の魔導書",
+      "unlocks": "flare",
+      "cost": 280
+    },
+    {
+      "id": "tome_blizzard",
+      "slot": "spellbook",
+      "name": "氷結の魔導書",
+      "unlocks": "blizzard",
+      "cost": 280
+    },
+    {
+      "id": "tome_tempest",
+      "slot": "spellbook",
+      "name": "暴風の魔導書",
+      "unlocks": "tempest",
+      "cost": 280
+    },
+    {
+      "id": "tome_quake",
+      "slot": "spellbook",
+      "name": "地裂の魔導書",
+      "unlocks": "quake",
+      "cost": 280
     }
   ]
 }

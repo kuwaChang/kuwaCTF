@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" type="text/css" href="../css/index.css">
-  <title>AI先生</title>
+  <title>AIチューター</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -304,8 +304,8 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>🤖 AI先生</h1>
-      <p>CTFの問題で困ったら、AI先生に質問してみましょう！</p>
+      <h1>🤖 AIチューター</h1>
+      <p>CTFの問題で困ったら、AIチューターに質問してみましょう！</p>
     </div>
 
     <div class="status-bar" id="statusBar">
@@ -319,7 +319,7 @@
     <div id="errorMessage" class="error-message hidden"></div>
 
     <div class="problem-selector">
-      <h3>🎯 AI先生に質問する対象問題</h3>
+      <h3>🎯 AIチューターに質問する対象問題</h3>
       <div class="selector-row">
         <select id="categorySelect">
           <option value="">問題を指定しない（全体向け）</option>
@@ -332,7 +332,7 @@
 
     <div class="chat-container" id="chatContainer">
       <div class="message assistant">
-        <span class="message-meta">AI先生</span>
+        <span class="message-meta">AIチューター</span>
         <span class="message-body">こんにちは！CTFの問題で困ったことがあれば、何でも質問してください。直接的な答えは教えませんが、ヒントや考え方を一緒に考えましょう！</span>
       </div>
     </div>
@@ -443,7 +443,7 @@
       messageDiv.className = 'message assistant';
       const meta = document.createElement('span');
       meta.className = 'message-meta';
-      meta.textContent = 'AI先生';
+      meta.textContent = 'AIチューター';
       const body = document.createElement('span');
       body.className = 'message-body';
       body.innerHTML = '<span class="loading"></span> 考え中...';
@@ -765,7 +765,7 @@
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${role}`;
       
-      const roleName = role === 'user' ? 'あなた' : 'AI先生';
+      const roleName = role === 'user' ? 'あなた' : 'AIチューター';
       const displayContent = role === 'assistant'
         ? formatAnswerText(content)
         : escapeHtml(content).replace(/\n/g, '<br>');
@@ -796,7 +796,7 @@
         
         if (response.ok) {
           const container = document.getElementById('chatContainer');
-          container.innerHTML = '<div class="message assistant"><span class="message-meta">AI先生</span><span class="message-body">会話履歴をクリアしました。新しい質問から始めましょう！</span></div>';
+          container.innerHTML = '<div class="message assistant"><span class="message-meta">AIチューター</span><span class="message-body">会話履歴をクリアしました。新しい質問から始めましょう！</span></div>';
         }
       } catch (error) {
         console.error('履歴クリアエラー:', error);

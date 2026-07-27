@@ -35,17 +35,27 @@
         <button id="guardBtn">防御</button>
         <button id="nextEnemyBtn">次の敵へ</button>
       </div>
+      <div id="magicActions" class="magic-actions"></div>
       <div id="stageClearActions" class="stage-clear-actions">
         <p class="stage-clear-message">ステージクリア！</p>
         <a class="link-btn" href="/game">RPGトップへ戻る</a>
       </div>
       <div class="battle-bottom">
-        <div class="player-hp-wrap">
-          <div class="player-hp-label">プレイヤーHP</div>
-          <div class="player-hp-bar">
-            <div id="playerHpFill" class="player-hp-fill"></div>
+        <div class="player-resource-wrap">
+          <div class="player-hp-wrap">
+            <div class="player-hp-label">プレイヤーHP</div>
+            <div class="player-hp-bar">
+              <div id="playerHpFill" class="player-hp-fill"></div>
+            </div>
+            <div id="playerHpText" class="player-hp-text">-</div>
           </div>
-          <div id="playerHpText" class="player-hp-text">-</div>
+          <div class="player-mp-wrap">
+            <div class="player-mp-label">プレイヤーMP</div>
+            <div class="player-mp-bar">
+              <div id="playerMpFill" class="player-mp-fill"></div>
+            </div>
+            <div id="playerMpText" class="player-mp-text">-</div>
+          </div>
         </div>
         <div id="battleLog" class="battle-log"></div>
       </div>
