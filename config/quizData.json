@@ -588,58 +588,365 @@
   },
   "Forensics": {
     "forensics1": {
-      "answer": "FLAG{forensics_easy}",
-      "title": "簡単なフォレンジック",
+      "answer": "FLAG{Gr3p_5trings_Pr@cTic3}",
+      "title": "Welcome!",
       "categoryId": "forensics",
-      "desc": "画像ファイルに隠されたFLAGを見つけよう。",
+      "desc": "FLAGをさがせ！",
       "hint": [
-        "ステガノグラフィーツールを使ってみよう"
+
       ],
-      "point": 40,
+      "point": 10,
+      "files": [
+        "anthem.flag.txt"
+      ]
+    },
+    "forensics2": {
+      "answer": "FLAG{工学院大学}",
+      "title": "ここどこ？",
+      "categoryId": "forensics",
+      "desc": "どこかで見たことがあるような...\n\nこたえ：CSL24{xxxxx}",
+      "hint": [
+        "色が気持ち悪いですよね"
+      ],
+      "point": 10,
+      "files": [
+        "kokodoko.jpg"
+      ]
+    },
+    "forensics3": {
+      "answer": "FLAG{Loquat_jelly}",
+      "title": "プロパティ",
+      "categoryId": "forensics",
+      "desc": "ビワについてもっと知りたい。 詳細を見てみよう！",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": [
+        "biwa.jpg"
+      ]
+    },
+    "forensics4": {
+      "answer": "FLAG{}",
+      "title": "真っ白",
+      "categoryId": "forensics",
+      "desc": "真っ白！まぶしすぎるよー！",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics5": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics6": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics7": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics8": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics9": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics10": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics11": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics12": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics13": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics14": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics15": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
+      "files": []
+    },
+    "forensics16": {
+      "answer": "FLAG{}",
+      "title": "",
+      "categoryId": "forensics",
+      "desc": "",
+      "hint": [
+
+      ],
+      "point": 10,
       "files": []
     }
   },
   "Crypto": {
     "crypto1": {
-      "answer": "FLAG{crypto1}",
-      "title": "title",
+      "answer": "FLAG{Nice_to_meet_you:)}",
+      "title": "Cryptoに興味のあるあなたへ",
       "categoryId": "crypto",
-      "desc": "desc",
+      "desc": "以下のサイトで学習するといいでしょう。 \n\nCryptoHack: https://cryptohack.org/ \n\nCryptopals: https://cryptopals.com/ \n\nDreamhack: https://dreamhack.io/ctf\n\nFLAG{Nice_to_meet_you:)}",
       "hint": [
-        "hint"
+        
       ],
       "point": 10,
       "files": []
     },
     "crypto2": {
-      "answer": "FLAG{crypto2}",
-      "title": "title",
+      "answer": "FLAG{welcome_to_ctf}",
+      "title": "ROT",
       "categoryId": "crypto",
-      "desc": "desc",
+      "desc": "間違えて文字列をずらしちゃった！！ \n\"FLAG\"から始まるのは覚えてるんだけど、どのくらいずらしちゃったんだっけ\n\nSYNT{jrypbzr_gb_pgs}",
       "hint": [
-        "hint"
+        
+      ],
+      "point": 10,
+      "files": []
+    },
+    "crypto3": {
+      "answer": "FLAG{base1280}",
+      "title": "手動でやるのはつらい奴",
+      "categoryId": "crypto",
+      "desc": "20回エンコードされた文字列です。\n 元の文章に戻してあげましょう。 \nゴリ押しでできるならやってみてください。",
+      "hint": [
+        
+      ],
+      "point": 10,
+      "files": [
+        "make_base64x20.py",
+        "Question.txt"
+      ]
+    },
+    "crypto4": {
+      "answer": "FLAG{crypto4}",
+      "title": "Let's cook 1",
+      "categoryId": "crypto",
+      "desc": "シェフ！ 料理のお時間です！！\n\nRkxBR3tmTDRnX2k1X1QwcjF0ZU59",
+      "hint": [
+        "ここの調理場を使用してみてください\nhttps://gchq.github.io/CyberChef/",
+        "使い方はここ\nhttps://tsalvia.hatenablog.com/entry/2019/02/23/223943"
+      ],
+      "point": 15,
+      "files": []
+    },
+    "crypto5": {
+      "answer": "FLAG{13244}",
+      "title": "はい！それはφです！",
+      "categoryId": "crypto",
+      "desc": "φ(1234) + φ(5678) + φ(9973) =?\n\n答えをFLAGでラップせよ 例: 答えが52ならFLAG{52}",
+      "hint": [
+        ""
+      ],
+      "point": 15,
+      "files": []
+    },
+    "crypto6": {
+      "answer": "FLAG{10200}",
+      "title": "素数なのか素数じゃないのか！どっちなんだい！",
+      "categoryId": "crypto",
+      "desc": "以下の数字が素数か判定しなさい．スタートを数字の1とし，素数ならx100を，素数でないなら+100をし，合計を求めよ．\n\n999681217\n999681186\n140628287\n140168112\n\n例えば，True, False, Trueなら1 * 100 + 100 * 100 = 10100",
+      "hint": [
+        
+      ],
+      "point": 15,
+      "files": []
+    },
+    "crypto7": {
+      "answer": "FLAG{use_factordb}",
+      "title": "RSA",
+      "categoryId": "crypto",
+      "desc": "n: 97139961312384239075080721131188244842051515305572003521287545456189235939577, \n e: 65537, \n Encrypted message: 50826727040874016806840751525243675163767614205602835883600078854382143980528",
+      "hint": [
+        "素因数分解してくれるDBがあればいいんだけどね。"
+      ],
+      "point": 15,
+      "files": []
+    },
+    "crypto8": {
+      "answer": "FLAG{6a1e963371a64b32aff302ef7f3a7d6df8df903fce10f3db6ee918f18ac11f2a}",
+      "title": "SHA256",
+      "categoryId": "crypto",
+      "desc": "\"FLAG\"のSHA256ハッシュ値を計算してみてください。\n\nCSL24{\"ハッシュ値\"}",
+      "hint": [
+        
       ],
       "point": 20,
       "files": []
     },
-    "crypto3": {
-      "answer": "FLAG{crypto3}",
-      "title": "title",
+    "crypto9": {
+      "answer": "FLAG{rsa}",
+      "title": "easy_RSA",
       "categoryId": "crypto",
-      "desc": "desc",
+      "desc": "２つの鍵があるけど、どっちの鍵を使えばいいのだ？ \nそれともどちらの鍵も使うのか？",
       "hint": [
-        "hint"
+        
+      ],
+      "point": 30,
+      "files": [
+        "private-key.pem",
+        "public-key.pem",
+        "target.encrypted"
+      ]
+    },
+    "crypto10": {
+      "answer": "FLAG{ASCIICode}",
+      "title": "CodeDecode",
+      "categoryId": "crypto",
+      "desc": "コンピュータはどのようにして文字を表現しているのでしょうか。これはその一つです。何と書いてあるか解読してください！\n\n46 4c 41 47 7b 41 53 43 49 49 43 6f 64 65 7d",
+      "hint": [
+        
       ],
       "point": 50,
       "files": []
     },
-    "crypto4": {
-      "answer": "FLAG{crypto4}",
-      "title": "title",
+    "crypto11": {
+      "answer": "FLAG{Welcome_40mP_songs}",
+      "title": "==__==",
       "categoryId": "crypto",
-      "desc": "desc",
-      "hint": [],
-      "point": 60,
+      "desc": "Welcome!\n\nWWVzLCBJJ20gdGhlIGNsb3duDQpJJ20gdGhlIGpva2UgeW91J3ZlRkxBR3tXZWxjb21lXzQwbVBfc29uZ3N9DQphbHdheXMga25vd24gbWUgYXMsIHNvDQpXaGlsZSBJJ20geW91ciBwdXBwZXQsIHdvdWxkIHlvdSBraW5kbHkNClBsZWFzZSBwbGF5IHdpdGggbWUgYWdhaW4=",
+      "hint": [
+        
+      ],
+      "point": 50,
+      "files": []
+    },
+    "crypto12": {
+      "answer": "FLAG{Let's_find_my_memorable_songs!}",
+      "title": "%%__%%",
+      "categoryId": "crypto",
+      "desc": "hmmm\n\n%E5%BE%85%E3%81%A1%E5%90%88%E3%82%8F%E3%81%9B%E3%81%AF2%E6%99%82%E9%96%93%E5%89%8D%E3%81%A7%0D%0A%E6%AD%A4%E5%87%A6%E3%81%93%E3%81%93%E3%81%AB%E7%8B%AC%E3%82%8A%E3%80%80%E3%81%9D%E3%82%8C%E3%81%8C%E7%AD%94%E3%81%88%E3%81%A7%E3%81%97%E3%82%87%0D%0A%E8%A1%97%E3%82%86%E3%81%8F%E4%BA%BA%E3%80%80%E6%B5%81%E3%82%8C%E3%82%8B%E9%9B%B2%0D%0A%E5%83%95%E3%81%AE%E3%81%93%E3%81%A8%E3%82%92%E5%98%B2%E7%AC%91%E3%81%82%E3%81%96%E3%82%8F%E3%82%89%E3%81%A3%E3%81%A6%E3%81%9F%0D%0A%0D%0A%E3%81%9D%E3%82%8C%E3%81%AF%E7%B0%A1%E5%8D%98%E3%81%A7%E3%80%80%E3%81%A8%E3%81%A6%E3%82%82%E5%9B%B0%E9%9B%A3%E3%81%A7%0D%0A%E8%AA%8D%E3%82%81%E3%82%8B%E3%81%93%E3%81%A8%E3%81%A7%E5%89%8D%E3%81%AB%E9%80%B2%E3%82%81%E3%82%8B%E3%81%AE%E3%81%AB%0D%0A%E4%BF%A1%E3%81%98%E3%82%89%E3%82%8C%E3%81%AA%E3%81%8F%E3%81%A6%E3%80%80%E4%BF%A1%E3%81%98%E3%81%9F%E3%81%8F%E3%81%AA%E3%81%8F%E3%81%A6%0D%0A%E5%90%9B%E3%81%AE%E4%B8%AD%E3%81%A7%E3%81%8D%E3%81%A3%E3%81%A8%E5%83%95%E3%81%AF%E9%81%93%E5%8C%96%E5%B8%AB%E3%81%AA%E3%82%93%E3%81%A7%E3%81%97%E3%82%87%0D%0A%0D%0AAh%20%E5%9B%9E%E3%81%A3%E3%81%A6%E3%80%80%E5%9B%9E%E3%81%A3%E3%81%A6%E3%80%80%E5%9B%9E%E3%82%8A%E7%96%B2%E3%82%8C%E3%81%A6%0D%0AAh%20%E6%81%AF%E3%81%8C%E3%80%80%E6%81%AF%E3%81%8C%E5%88%87%E3%82%8C%E3%81%9F%E3%81%AE%0D%0A%E3%81%9D%E3%81%86%E3%80%80%E3%81%93%E3%82%8C%E3%81%8C%E6%82%B2%E3%81%97%E3%81%84%E5%83%95%E3%81%AE%E6%9C%AB%E8%B7%AF%E3%81%A0%0D%0A%E5%90%9B%E3%81%AB%E8%BE%BF%E3%82%8A%E7%9D%80%E3%81%91%E3%81%AA%E3%81%84%E3%81%BE%E3%81%BE%E3%81%A7%0D%0A%0D%0A%E5%83%95%E3%82%92%E4%B9%97%E3%81%9B%E3%81%A6%E5%9C%B0%E7%90%83%E3%81%AF%E5%9B%9E%E3%82%8B%0D%0A%E4%BD%95%E3%82%82%E7%9F%A5%E3%82%89%E3%81%AA%E3%81%84%E9%A1%94%E3%81%97%E3%81%A6%E5%9B%9E%E3%82%8B%0D%0A1%E7%A7%92%E3%81%A0%E3%81%91%E5%91%BC%E5%90%B8%E3%82%92%E6%AD%A2%E3%82%81%E3%81%A6FLAG%7BTGV0J3NfZmluZF9teV9tZW1vcmFibGVfc29uZ3Mh%7D%E4%BD%95%E3%82%82%E8%A8%80%E3%81%88%E3%81%9A%E7%AB%8B%E3%81%A1%E3%81%99%E3%81%8F%E3%82%80%E5%83%95%0D%0A%0D%0A%E3%81%9D%E3%82%8C%E3%81%AF%E5%81%B6%E7%84%B6%E3%81%A7%E3%80%80%E3%81%9D%E3%81%97%E3%81%A6%E9%81%8B%E5%91%BD%E3%81%A7%0D%0A%E7%9F%A5%E3%82%89%E3%81%AA%E3%81%84%E3%81%BB%E3%81%86%E3%81%8C%E8%89%AF%E3%81%84%E3%81%A8%E7%9F%A5%E3%81%A3%E3%81%A6%E3%81%9F%E3%81%AE%E3%81%AB%0D%0A%E8%A7%A6%E3%82%8C%E3%81%A6%E3%81%97%E3%81%BE%E3%81%A3%E3%81%9F%E3%81%AE%E3%80%80%E5%90%9B%E3%81%AE%E6%B8%A9%E3%82%82%E3%82%8A%E3%81%AB%0D%0A%E3%81%9D%E3%81%AE%E7%AC%91%E9%A1%94%E3%81%A7%E3%80%80%E3%81%9D%E3%81%AE%E4%BB%95%E8%8D%89%E3%81%A7%0D%0A%E5%83%95%E3%81%8C%E5%A3%8A%E3%82%8C%E3%81%A6%E3%81%97%E3%81%BE%E3%81%86%E3%81%8B%E3%82%89%0D%0A%0D%0Aah%2E%2E%2E%20%E5%9B%9E%E3%81%A3%E3%81%A6%E3%80%80%E5%9B%9E%E3%81%A3%E3%81%A6%E3%80%80%E5%9B%9E%E3%82%8A%E7%96%B2%E3%82%8C%E3%81%A6%0D%0Aah%2E%2E%2E%20%E6%81%AF%E3%81%8C%E3%80%80%E6%81%AF%E3%81%8C%E3%80%80%E6%81%AF%E3%81%8C%E6%AD%A2%E3%81%BE%E3%82%8B%E3%81%AE%0D%0A%0D%0AAh%20%E5%A4%89%E3%82%8F%E3%81%A3%E3%81%A6%E3%80%80%E5%A4%89%E3%82%8F%E3%81%A3%E3%81%A6%E3%80%80%E5%A4%89%E3%82%8F%E3%81%A3%E3%81%A6%E3%82%86%E3%81%8F%E3%81%AE%E3%81%8C%0D%0AAh%20%E6%80%96%E3%81%84%E3%80%80%E6%80%96%E3%81%84%E3%81%A0%E3%81%91%E3%81%AA%E3%81%AE%0D%0A%E3%82%82%E3%81%86%E3%82%84%E3%82%81%E3%81%9F%E3%80%80%E3%81%93%E3%81%93%E3%81%A7%E5%90%9B%E3%82%92%E5%BE%85%E3%81%A4%E3%81%AE%E3%81%AF%0D%0A%E5%83%95%E3%81%8C%E5%A3%8A%E3%82%8C%E3%81%A6%E3%81%97%E3%81%BE%E3%81%86%E3%81%A0%E3%81%91%E3%81%A0%0D%0A%0D%0AAh%20%E5%9B%9E%E3%81%A3%E3%81%A6%E3%80%80%E5%9B%9E%E3%81%A3%E3%81%A6%E3%80%80%E5%9B%9E%E3%82%8A%E7%96%B2%E3%82%8C%E3%81%A6%0D%0AAh%20%E6%81%AF%E3%81%8C%E3%80%80%E6%81%AF%E3%81%8C%E6%AD%A2%E3%81%BE%E3%82%8B%E3%81%AE%0D%0A%E3%81%9D%E3%81%86%E3%80%80%E5%83%95%E3%81%AF%E5%90%9B%E3%81%8C%E6%9C%9B%E3%82%80%E3%83%94%E3%82%A8%E3%83%AD%E3%81%A0%0D%0A%E5%90%9B%E3%81%8C%E6%80%9D%E3%81%86%E3%81%BE%E3%81%BE%E3%81%AB%E3%80%80%E6%93%8D%E3%81%A3%E3%81%A6%E3%82%88",
+      "hint": [
+        "FLAGは必ず文章になるよ"
+      ],
+      "point": 50,
+      "files": []
+    },
+    "crypto13": {
+      "answer": "FLAG{exclusiveor}",
+      "title": "easy_encrypto",
+      "categoryId": "crypto",
+      "desc": "ちゃんと暗号化されているのか...？",
+      "hint": [
+        ""
+      ],
+      "point": 80,
+      "files": [
+        "EXOR.py"
+      ]
+    },
+    "crypto14": {
+      "answer": "FLAG{You_can_more_up}",
+      "title": "one-up",
+      "categoryId": "crypto",
+      "desc": "これは暗号化できてないですよね。",
+      "hint": [
+        
+      ],
+      "point": 90,
+      "files": [
+        "one-up.py",
+        "output.txt"
+      ]
+    },
+    "crypto15": {
+      "answer": "FLAG{caesar}",
+      "title": "シーザス",
+      "categoryId": "crypto",
+      "desc": "これはとってもシンプルな暗号化ですね！\n\nSYNT{pnrfne}",
+      "hint": [
+        
+      ],
+      "point": 100,
       "files": []
     }
   },
