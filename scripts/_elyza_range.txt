@@ -1,0 +1,25 @@
+max_row: 1181
+
+--- Llama末尾〜ELYZA開始想定 (rows 1042..1052) ---
+r1042 VAL: 174 | Llama3.2 | 2 | 生成AI | 1 | 1 | 1 | 1 | 4 | 1 | 1
+r1043 VAL: 174 | Llama3.2 | 2 | 人間 | None | None | None | None | None | None | None
+r1044 VAL: 174 | Llama3.2 | 3 | 生成AI | 1 | 1 | 1 | 1 | 4 | 1 | 1
+r1045 VAL: 174 | Llama3.2 | 3 | 人間 | None | None | None | None | None | None | None
+r1046 VAL: 175 | None | None | None | None | None | None | None | None | None | None
+r1047 VAL: 175 | None | None | None | None | None | None | None | None | None | None
+r1048 VAL: 175 | None | None | None | None | None | None | None | None | None | None
+r1049 VAL: 175 | None | None | None | None | None | None | None | None | None | None
+r1050 VAL: 175 | None | None | None | None | None | None | None | None | None | None
+r1051 VAL: 175 | None | None | None | None | None | None | None | None | None | None
+r1052 VAL: 176 | None | None | None | None | None | None | None | None | None | None
+
+--- 旧数式末尾付近 (rows 1178..1184) ---
+r1178 VAL: 197 | None | None | None | None | None | None | None | None | None | None
+r1179 VAL: 197 | None | None | None | None | None | None | None | None | None | None
+r1180 VAL: 197 | None | None | None | None | None | None | None | None | None | None
+r1181 VAL: 197 | None | None | None | None | None | None | None | None | None | None
+r1182 VAL: None | None | None | None | None | None | None | None | None | None | None
+r1183 VAL: None | None | None | None | None | None | None | None | None | None | None
+r1184 VAL: None | None | None | None | None | None | None | None | None | None | None
+
+ELYZA範囲(1046-2089) の既存非空セル数: 0  例: []

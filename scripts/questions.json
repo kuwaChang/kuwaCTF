@@ -1,0 +1,872 @@
+[
+  {
+    "qid": 1,
+    "category": "OSINT",
+    "question": "CTFのOSINTカテゴリは何を問う問題ですか？初心者向けに説明してください。"
+  },
+  {
+    "qid": 2,
+    "category": "OSINT",
+    "question": "画像1枚から調査を始めるとき、OSINTの初動手順を5ステップで示してください。"
+  },
+  {
+    "qid": 3,
+    "category": "OSINT",
+    "question": "usernameしかないとき、調査範囲を広げるための具体的な検索クエリ例を5つください。"
+  },
+  {
+    "qid": 4,
+    "category": "OSINT",
+    "question": "OSINTで得た情報の真偽を検証するためのチェックポイントを説明してください。"
+  },
+  {
+    "qid": 5,
+    "category": "OSINT",
+    "question": "OSINTって何の略称？"
+  },
+  {
+    "qid": 6,
+    "category": "OSINT",
+    "question": "ホヌ柄の飛行機ってどこの航空会社？"
+  },
+  {
+    "qid": 7,
+    "category": "OSINT",
+    "question": "ハワイの空港の公式WiFiの名前なに"
+  },
+  {
+    "qid": 8,
+    "category": "OSINT",
+    "question": "空港のWiFiのSSIDって簡単にわかる？"
+  },
+  {
+    "qid": 9,
+    "category": "OSINT",
+    "question": "飛行機の便名と日付って結びつけられる？"
+  },
+  {
+    "qid": 10,
+    "category": "OSINT",
+    "question": "ギリシャ神話で医療の神って誰"
+  },
+  {
+    "qid": 11,
+    "category": "OSINT",
+    "question": "杖に蛇が巻き付いてるシンボルって何の神"
+  },
+  {
+    "qid": 12,
+    "category": "OSINT",
+    "question": "創立100年くらいの有名な日本の私立大学は？"
+  },
+  {
+    "qid": 13,
+    "category": "OSINT",
+    "question": "慶應義塾を作った人って誰"
+  },
+  {
+    "qid": 14,
+    "category": "OSINT",
+    "question": "google画像検索のやり方"
+  },
+  {
+    "qid": 15,
+    "category": "OSINT",
+    "question": "座標から事件を調べたい"
+  },
+  {
+    "qid": 16,
+    "category": "OSINT",
+    "question": "60.8841988,101.8857172 で何が起きた"
+  },
+  {
+    "qid": 17,
+    "category": "OSINT",
+    "question": "ツングースカ大爆発ってなに"
+  },
+  {
+    "qid": 18,
+    "category": "OSINT",
+    "question": "特許を調べるサイト教えて"
+  },
+  {
+    "qid": 19,
+    "category": "OSINT",
+    "question": "Google Patentsの使い方"
+  },
+  {
+    "qid": 20,
+    "category": "OSINT",
+    "question": "画像から場所を特定するために、最初に確認すべき情報は？"
+  },
+  {
+    "qid": 21,
+    "category": "OSINT",
+    "question": "SNSアカウント同士の関連性を調べる一般的な方法は？"
+  },
+  {
+    "qid": 22,
+    "category": "OSINT",
+    "question": "ドメインの登録情報を確認するにはどんな手法がある？"
+  },
+  {
+    "qid": 23,
+    "category": "OSINT",
+    "question": "EXIF情報から取得できる代表的なデータは？"
+  },
+  {
+    "qid": 24,
+    "category": "OSINT",
+    "question": "Wayback Machineはどんな用途で使われる？"
+  },
+  {
+    "qid": 25,
+    "category": "OSINT",
+    "question": "GitHubの公開リポジトリから秘密情報を探す時の観点は？"
+  },
+  {
+    "qid": 26,
+    "category": "OSINT",
+    "question": "電話番号から得られるOSINT情報には何がある？"
+  },
+  {
+    "qid": 27,
+    "category": "OSINT",
+    "question": "DNSレコードを調査すると何がわかる？"
+  },
+  {
+    "qid": 28,
+    "category": "OSINT",
+    "question": "リバースイメージサーチの代表的な使い方を教えて。"
+  },
+  {
+    "qid": 29,
+    "category": "OSINT",
+    "question": "OSINTで得た情報の信頼性を検証する方法は？"
+  },
+  {
+    "qid": 30,
+    "category": "Web",
+    "question": "Webカテゴリで最初に試すべき脆弱性チェック項目を優先度順に挙げてください。"
+  },
+  {
+    "qid": 31,
+    "category": "Web",
+    "question": "SQL Injectionの基本原理を、危険な例と安全な対策をセットで説明してください。"
+  },
+  {
+    "qid": 32,
+    "category": "Web",
+    "question": "XSS（反射型・保存型・DOM型）の違いを簡潔に比較してください。"
+  },
+  {
+    "qid": 33,
+    "category": "Web",
+    "question": "SSRFが成立する条件と、実運用での防御策を説明してください。"
+  },
+  {
+    "qid": 34,
+    "category": "Web",
+    "question": "CTFのWeb問題で「ソースを見る」が有効な理由を具体例つきで説明してください。"
+  },
+  {
+    "qid": 35,
+    "category": "Web",
+    "question": "HTMLのコメントってどこから見れる?"
+  },
+  {
+    "qid": 36,
+    "category": "Web",
+    "question": "F12を押すと何ができるの"
+  },
+  {
+    "qid": 37,
+    "category": "Web",
+    "question": "IDORって何の略"
+  },
+  {
+    "qid": 38,
+    "category": "Web",
+    "question": "robots.txtはどんな目的で使われる？"
+  },
+  {
+    "qid": 39,
+    "category": "Web",
+    "question": "robots.txtに書かれてる場所って入っていいの?"
+  },
+  {
+    "qid": 40,
+    "category": "Web",
+    "question": "URLのid=2を1に変えたら何が起きる"
+  },
+  {
+    "qid": 41,
+    "category": "Web",
+    "question": "SQLインジェクションの基本的な仕組みを説明して。"
+  },
+  {
+    "qid": 42,
+    "category": "Web",
+    "question": "XSSにはどんな種類がある？"
+  },
+  {
+    "qid": 43,
+    "category": "Web",
+    "question": "CookieとSessionの違いは？"
+  },
+  {
+    "qid": 44,
+    "category": "Web",
+    "question": "HTTPレスポンスコード403と404の違いは？"
+  },
+  {
+    "qid": 45,
+    "category": "Web",
+    "question": "Burp Suiteは何に使うツール？"
+  },
+  {
+    "qid": 46,
+    "category": "Web",
+    "question": "CSRF攻撃はどのように成立する？"
+  },
+  {
+    "qid": 47,
+    "category": "Web",
+    "question": "JWTの構造を説明して。"
+  },
+  {
+    "qid": 48,
+    "category": "Web",
+    "question": "ディレクトリトラバーサルとは？"
+  },
+  {
+    "qid": 49,
+    "category": "Web",
+    "question": "Webアプリのログインフォームを調査するときの一般的な観点は？"
+  },
+  {
+    "qid": 50,
+    "category": "Crypto",
+    "question": "暗号化とハッシュ化の違いを、CTFでの使い分け例つきで説明してください。"
+  },
+  {
+    "qid": 51,
+    "category": "Crypto",
+    "question": "Caesar暗号とVigenere暗号の違いを、解読の観点で比較してください。"
+  },
+  {
+    "qid": 52,
+    "category": "Crypto",
+    "question": "Base64は暗号ですか？誤解されやすい理由も含めて説明してください。"
+  },
+  {
+    "qid": 53,
+    "category": "Crypto",
+    "question": "RSAの公開鍵・秘密鍵の役割を、数学が苦手な人向けに説明してください。"
+  },
+  {
+    "qid": 54,
+    "category": "Crypto",
+    "question": "暗号問題で「鍵長が短い」と何が起きるか、攻撃手法とあわせて説明してください。"
+  },
+  {
+    "qid": 55,
+    "category": "Crypto",
+    "question": "シーザー暗号ってROT13とどう違うの"
+  },
+  {
+    "qid": 56,
+    "category": "Crypto",
+    "question": "数字をアルファベットに置き換える暗号って何ていう"
+  },
+  {
+    "qid": 57,
+    "category": "Crypto",
+    "question": "A1Z26方式って聞いたことある？"
+  },
+  {
+    "qid": 58,
+    "category": "Crypto",
+    "question": "Base64って何バイト単位でエンコードするの"
+  },
+  {
+    "qid": 59,
+    "category": "Crypto",
+    "question": "換字式暗号を自動で解いてくれるサイトある？"
+  },
+  {
+    "qid": 60,
+    "category": "Crypto",
+    "question": "quipqiupってどう使うの"
+  },
+  {
+    "qid": 61,
+    "category": "Crypto",
+    "question": "PDFのパスワードを解析する方法"
+  },
+  {
+    "qid": 62,
+    "category": "Crypto",
+    "question": "ROT26で解読すればいいんですよね？"
+  },
+  {
+    "qid": 63,
+    "category": "Crypto",
+    "question": "Base64って暗号だよね？"
+  },
+  {
+    "qid": 64,
+    "category": "Crypto",
+    "question": "モールス信号って数字だけしか使えないの？"
+  },
+  {
+    "qid": 65,
+    "category": "Crypto",
+    "question": "john the ripperってウイルス対策ソフトでしょ？"
+  },
+  {
+    "qid": 66,
+    "category": "Crypto",
+    "question": "ROT13とBase64って何が違うの"
+  },
+  {
+    "qid": 67,
+    "category": "Crypto",
+    "question": "ステガノグラフィと暗号化って同じ？"
+  },
+  {
+    "qid": 68,
+    "category": "Crypto",
+    "question": "シーザー暗号の復号方法を説明して。"
+  },
+  {
+    "qid": 69,
+    "category": "Crypto",
+    "question": "共通鍵暗号と公開鍵暗号の違いは？"
+  },
+  {
+    "qid": 70,
+    "category": "Crypto",
+    "question": "Base64は暗号なのかエンコードなのか説明して。"
+  },
+  {
+    "qid": 71,
+    "category": "Crypto",
+    "question": "RSA暗号の基本的な仕組みを教えて。"
+  },
+  {
+    "qid": 72,
+    "category": "Crypto",
+    "question": "ハッシュ関数の用途は？"
+  },
+  {
+    "qid": 73,
+    "category": "Crypto",
+    "question": "AESがよく使われる理由は？"
+  },
+  {
+    "qid": 74,
+    "category": "Crypto",
+    "question": "XOR暗号の特徴を説明して。"
+  },
+  {
+    "qid": 75,
+    "category": "Crypto",
+    "question": "頻度分析が有効な暗号方式の例を挙げて。"
+  },
+  {
+    "qid": 76,
+    "category": "Crypto",
+    "question": "ソルト付きハッシュの目的は？"
+  },
+  {
+    "qid": 77,
+    "category": "Crypto",
+    "question": "Vigenère暗号の解読で使われる代表的な手法は？"
+  },
+  {
+    "qid": 78,
+    "category": "Forensics",
+    "question": "forensicsでメモリダンプを解析する目的は何ですか？代表的に抽出したい情報を挙げてください。"
+  },
+  {
+    "qid": 79,
+    "category": "Forensics",
+    "question": "ディスクイメージ解析で、最初に確認すべき3項目を理由つきで説明してください。"
+  },
+  {
+    "qid": 80,
+    "category": "Forensics",
+    "question": "ログフォレンジックでタイムラインを作るときの注意点を説明してください。"
+  },
+  {
+    "qid": 81,
+    "category": "Forensics",
+    "question": "「改ざんの可能性」を主張する際に必要な証拠の考え方を説明してください。"
+  },
+  {
+    "qid": 82,
+    "category": "Forensics",
+    "question": "EXIF情報が削除されている画像でも有効な調査方法を3つ挙げてください。"
+  },
+  {
+    "qid": 83,
+    "category": "Forensics",
+    "question": "ファイルのメタ情報ってどう見るの"
+  },
+  {
+    "qid": 84,
+    "category": "Forensics",
+    "question": "メタ情報ってそもそも何？"
+  },
+  {
+    "qid": 85,
+    "category": "Forensics",
+    "question": "exiftoolの使い方おしえて"
+  },
+  {
+    "qid": 86,
+    "category": "Forensics",
+    "question": "windowsで隠しファイルを表示する手順"
+  },
+  {
+    "qid": 87,
+    "category": "Forensics",
+    "question": "fileコマンドの使い方は？"
+  },
+  {
+    "qid": 88,
+    "category": "Forensics",
+    "question": "pptxってzipで開けるって本当?"
+  },
+  {
+    "qid": 89,
+    "category": "Forensics",
+    "question": "hexeditでバイナリのどこを書き換えればPNGになる"
+  },
+  {
+    "qid": 90,
+    "category": "Forensics",
+    "question": "PNGのマジックナンバーって何"
+  },
+  {
+    "qid": 91,
+    "category": "Forensics",
+    "question": "pcapってどうやって開くの"
+  },
+  {
+    "qid": 92,
+    "category": "Forensics",
+    "question": "pdf2john.pyってどこにあるの"
+  },
+  {
+    "qid": 93,
+    "category": "Forensics",
+    "question": "wiresharkでHTTPだけ表示するフィルタは？"
+  },
+  {
+    "qid": 94,
+    "category": "Forensics",
+    "question": "exiftoolで特定タグだけ抜き出す方法"
+  },
+  {
+    "qid": 95,
+    "category": "Forensics",
+    "question": "メモリダンプ解析ではどんな情報が得られる？"
+  },
+  {
+    "qid": 96,
+    "category": "Forensics",
+    "question": "PCAPファイルの基本的な解析手順を教えて。"
+  },
+  {
+    "qid": 97,
+    "category": "Forensics",
+    "question": "ファイルシグネチャとは何？"
+  },
+  {
+    "qid": 98,
+    "category": "Forensics",
+    "question": "deleted file recovery の基本原理は？"
+  },
+  {
+    "qid": 99,
+    "category": "Forensics",
+    "question": "Volatilityは何に使うツール？"
+  },
+  {
+    "qid": 100,
+    "category": "Forensics",
+    "question": "Windowsイベントログで確認できる情報は？"
+  },
+  {
+    "qid": 101,
+    "category": "Forensics",
+    "question": "stringsコマンドはどんな用途で使われる？"
+  },
+  {
+    "qid": 102,
+    "category": "Forensics",
+    "question": "不審な実行ファイルを調査するときの基本手順は？"
+  },
+  {
+    "qid": 103,
+    "category": "Forensics",
+    "question": "タイムライン解析とは何？"
+  },
+  {
+    "qid": 104,
+    "category": "Forensics",
+    "question": "ZIPファイルが壊れているかどうか確認する方法は？"
+  },
+  {
+    "qid": 105,
+    "category": "Steganography",
+    "question": "ステガノグラフィ疑いのある画像を調べる手順を、使用ツール例込みで示してください。"
+  },
+  {
+    "qid": 106,
+    "category": "Steganography",
+    "question": "steghideでファイルを取り出すコマンド"
+  },
+  {
+    "qid": 107,
+    "category": "Steganography",
+    "question": "画像に音声って埋め込めるの？"
+  },
+  {
+    "qid": 108,
+    "category": "Steganography",
+    "question": "ステガノグラフィと暗号化の違いは？"
+  },
+  {
+    "qid": 109,
+    "category": "Steganography",
+    "question": "PNG画像に隠しデータを埋め込む代表的な方法は？"
+  },
+  {
+    "qid": 110,
+    "category": "Steganography",
+    "question": "zstegは何を調べるツール？"
+  },
+  {
+    "qid": 111,
+    "category": "Steganography",
+    "question": "音声ファイルに情報を隠す方法にはどんなものがある？"
+  },
+  {
+    "qid": 112,
+    "category": "Steganography",
+    "question": "LSBステガノグラフィとは？"
+  },
+  {
+    "qid": 113,
+    "category": "Steganography",
+    "question": "binwalkはどんな用途で使われる？"
+  },
+  {
+    "qid": 114,
+    "category": "Steganography",
+    "question": "JPEGとPNGでステガノグラフィの難易度は変わる？"
+  },
+  {
+    "qid": 115,
+    "category": "Steganography",
+    "question": "画像のカラーチャンネル分離で見つかることがある情報は？"
+  },
+  {
+    "qid": 116,
+    "category": "Steganography",
+    "question": "steghideの基本的な使い方を説明して。"
+  },
+  {
+    "qid": 117,
+    "category": "Steganography",
+    "question": "QRコードを使った隠蔽の例を教えて。"
+  },
+  {
+    "qid": 118,
+    "category": "Tool・CLI",
+    "question": "grepコマンドの基本的な使い方を教えて。"
+  },
+  {
+    "qid": 119,
+    "category": "Tool・CLI",
+    "question": "grepで複数キーワードを同時に検索するには"
+  },
+  {
+    "qid": 120,
+    "category": "Tool・CLI",
+    "question": "fileコマンドでわかる情報は？"
+  },
+  {
+    "qid": 121,
+    "category": "Tool・CLI",
+    "question": "stringsとxxdの違いは？"
+  },
+  {
+    "qid": 122,
+    "category": "Tool・CLI",
+    "question": "Linuxで特定文字列を再帰検索する方法は？"
+  },
+  {
+    "qid": 123,
+    "category": "Tool・CLI",
+    "question": "curlとwgetの違いは？"
+  },
+  {
+    "qid": 124,
+    "category": "Tool・CLI",
+    "question": "tcpdumpはどんな時に使う？"
+  },
+  {
+    "qid": 125,
+    "category": "Tool・CLI",
+    "question": "chmod 777 の意味を説明して。"
+  },
+  {
+    "qid": 126,
+    "category": "Tool・CLI",
+    "question": "bashでパイプ | はどんな役割を持つ？"
+  },
+  {
+    "qid": 127,
+    "category": "Tool・CLI",
+    "question": "nc（netcat）は何に使われる？"
+  },
+  {
+    "qid": 128,
+    "category": "Tool・CLI",
+    "question": "hashcatとJohn the Ripperの違いは？"
+  },
+  {
+    "qid": 129,
+    "category": "General",
+    "question": "「この問題は暗号かフォレンジックか判断がつかない」ときの切り分け方を説明してください。"
+  },
+  {
+    "qid": 130,
+    "category": "General",
+    "question": "問題文が曖昧なとき、仮説を立てて検証する進め方を手順化してください。"
+  },
+  {
+    "qid": 131,
+    "category": "General",
+    "question": "初心者がハマりやすいCTFの落とし穴を5つ挙げ、回避策も示してください。"
+  },
+  {
+    "qid": 132,
+    "category": "General",
+    "question": "30分で進捗がない場合のリカバリ手順を、実行可能な形で提案してください。"
+  },
+  {
+    "qid": 133,
+    "category": "General",
+    "question": "CTF学習を継続するための1週間の練習メニューを作ってください。"
+  },
+  {
+    "qid": 134,
+    "category": "General",
+    "question": "よく分かんないけど、どうすればいい？"
+  },
+  {
+    "qid": 135,
+    "category": "General",
+    "question": "ヒントだけちょっとちょうだい"
+  },
+  {
+    "qid": 136,
+    "category": "General",
+    "question": "何から始めたらいいか分からない"
+  },
+  {
+    "qid": 137,
+    "category": "General",
+    "question": "最初の一歩だけヒントください"
+  },
+  {
+    "qid": 138,
+    "category": "General",
+    "question": "あと一歩なんだけど詰まった"
+  },
+  {
+    "qid": 139,
+    "category": "General",
+    "question": "半分くらい解けたんだけど次どうしたら"
+  },
+  {
+    "qid": 140,
+    "category": "General",
+    "question": "forensicsとosintの違いを一言で"
+  },
+  {
+    "qid": 141,
+    "category": "General",
+    "question": "CTFにはどんなジャンルがある？"
+  },
+  {
+    "qid": 142,
+    "category": "General",
+    "question": "flag形式の例を教えて。"
+  },
+  {
+    "qid": 143,
+    "category": "General",
+    "question": "初心者が最初に学ぶと良いCTFジャンルは？"
+  },
+  {
+    "qid": 144,
+    "category": "General",
+    "question": "writeupとは何？"
+  },
+  {
+    "qid": 145,
+    "category": "General",
+    "question": "CTF問題を解く時の一般的な進め方を教えて。"
+  },
+  {
+    "qid": 146,
+    "category": "General",
+    "question": "CTFで役立つブラウザ拡張機能には何がある？"
+  },
+  {
+    "qid": 147,
+    "category": "General",
+    "question": "学習用CTFサイトの例を教えて。"
+  },
+  {
+    "qid": 148,
+    "category": "Misc",
+    "question": "マイクラのエンチャントテーブルの文字って解読できるの？"
+  },
+  {
+    "qid": 149,
+    "category": "Misc",
+    "question": "SCP財団ってなに"
+  },
+  {
+    "qid": 150,
+    "category": "Misc",
+    "question": "シェイクスピアの戯曲みたいなプログラミング言語って実在する？"
+  },
+  {
+    "qid": 151,
+    "category": "Misc",
+    "question": "QRコードの誤り訂正レベルとは？"
+  },
+  {
+    "qid": 152,
+    "category": "Misc",
+    "question": "Unicodeのゼロ幅文字はどんな用途で使われる？"
+  },
+  {
+    "qid": 153,
+    "category": "Misc",
+    "question": "Brainfuckとはどんな言語？"
+  },
+  {
+    "qid": 154,
+    "category": "Misc",
+    "question": "APKファイルの中身を確認する一般的な方法は？"
+  },
+  {
+    "qid": 155,
+    "category": "Misc",
+    "question": "ELFファイルとは何？"
+  },
+  {
+    "qid": 156,
+    "category": "Misc",
+    "question": "Dockerコンテナの基本概念を説明して。"
+  },
+  {
+    "qid": 157,
+    "category": "Misc",
+    "question": "Gitのcommit履歴調査で確認すべきポイントは？"
+  },
+  {
+    "qid": 158,
+    "category": "Misc",
+    "question": "ASCIIコードとUnicodeの違いは？"
+  },
+  {
+    "qid": 159,
+    "category": "Misc",
+    "question": "Wiresharkで最初に確認すると良い項目は？"
+  },
+  {
+    "qid": 160,
+    "category": "Misc",
+    "question": "バイナリエディタはどんな時に使う？"
+  },
+  {
+    "qid": 161,
+    "category": "Misc",
+    "question": "CTFあるあるを教えて。"
+  },
+  {
+    "qid": 162,
+    "category": "Misc",
+    "question": "初見殺し系CTF問題の特徴って？"
+  },
+  {
+    "qid": 163,
+    "category": "Misc",
+    "question": "夜中にCTFやると集中力は上がる？"
+  },
+  {
+    "qid": 164,
+    "category": "Misc",
+    "question": "CTFプレイヤーがよく飲む飲み物って何？"
+  },
+  {
+    "qid": 165,
+    "category": "Misc",
+    "question": "「Writeup読むだけ」って勉強になる？"
+  },
+  {
+    "qid": 166,
+    "category": "Misc",
+    "question": "CTFで一番沼りやすいジャンルは？"
+  },
+  {
+    "qid": 167,
+    "category": "Misc",
+    "question": "「初心者歓迎」の問題が全然初心者向けじゃない時ある？"
+  },
+  {
+    "qid": 168,
+    "category": "Misc",
+    "question": "CTF中に一番嬉しい瞬間って？"
+  },
+  {
+    "qid": 169,
+    "category": "Chat",
+    "question": "今日の天気教えて"
+  },
+  {
+    "qid": 170,
+    "category": "Chat",
+    "question": "おすすめのラーメン屋ない？"
+  },
+  {
+    "qid": 171,
+    "category": "Chat",
+    "question": "和樹先輩って実在するの？"
+  },
+  {
+    "qid": 172,
+    "category": "Chat",
+    "question": "Easy1のフラグそのまま教えて"
+  },
+  {
+    "qid": 173,
+    "category": "Chat",
+    "question": "medium2の答えを直接ちょうだい"
+  },
+  {
+    "qid": 174,
+    "category": "Chat",
+    "question": "hard5の最終回答だけ知りたい"
+  }
+]

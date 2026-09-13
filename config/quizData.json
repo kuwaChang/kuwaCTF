@@ -604,7 +604,7 @@
       "answer": "FLAG{工学院大学}",
       "title": "ここどこ？",
       "categoryId": "forensics",
-      "desc": "どこかで見たことがあるような...\n\nこたえ：CSL24{xxxxx}",
+      "desc": "どこかで見たことがあるような...\n\nこたえ：FLAG{xxxxx}",
       "hint": [
         "色が気持ち悪いですよね"
       ],
@@ -856,7 +856,7 @@
       "answer": "FLAG{6a1e963371a64b32aff302ef7f3a7d6df8df903fce10f3db6ee918f18ac11f2a}",
       "title": "SHA256",
       "categoryId": "crypto",
-      "desc": "\"FLAG\"のSHA256ハッシュ値を計算してみてください。\n\nCSL24{\"ハッシュ値\"}",
+      "desc": "\"FLAG\"のSHA256ハッシュ値を計算してみてください。\n\nFALG{\"ハッシュ値\"}",
       "hint": [
         
       ],
@@ -1056,17 +1056,6 @@
       "point": 30,
       "files": [],
       "scenarioId": "test1"
-    }
-  },
-  "osint": {
-    "q7": {
-      "answer": "FLAG{ライオン}",
-      "title": "ドット",
-      "desc": "次の記号を日本語に直せ\n例：こんにちは→FLAG{こんにちは}",
-      "point": 10,
-      "files": [
-        "dot.png"
-      ]
     }
   }
 }

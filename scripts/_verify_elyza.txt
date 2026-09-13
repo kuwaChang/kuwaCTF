@@ -1,0 +1,22 @@
+A1046 formula: =INT((ROW()-1046)/6)+1 | C1046 formula: =INT(MOD(ROW()-1046,6)/2)+1
+
+--- ELYZA 代表行 (A式,C式,B,D,E..K) ---
+qid=1 run=1 row=1046: A==INT((ROW()-1046)/6)+1 C==INT(MOD(ROW()-1046,6)/2)+1 B=Elyza D=生成AI E-K=[5, 5, 4, 5, 5, 5, 4]
+qid=1 run=2 row=1048: A==INT((ROW()-1046)/6)+1 C==INT(MOD(ROW()-1046,6)/2)+1 B=Elyza D=生成AI E-K=[5, 5, 4, 5, 5, 5, 4]
+qid=1 run=3 row=1050: A==INT((ROW()-1046)/6)+1 C==INT(MOD(ROW()-1046,6)/2)+1 B=Elyza D=生成AI E-K=[5, 5, 4, 5, 5, 5, 4]
+qid=2 run=1 row=1052: A==INT((ROW()-1046)/6)+1 C==INT(MOD(ROW()-1046,6)/2)+1 B=Elyza D=生成AI E-K=[3, 4, 5, 4, 5, 5, 4]
+qid=64 run=1 row=1424: A==INT((ROW()-1046)/6)+1 C==INT(MOD(ROW()-1046,6)/2)+1 B=Elyza D=生成AI E-K=[2, 3, 4, 3, 5, 5, 4]
+qid=100 run=3 row=1644: A==INT((ROW()-1046)/6)+1 C==INT(MOD(ROW()-1046,6)/2)+1 B=Elyza D=生成AI E-K=[5, 5, 5, 5, 5, 5, 5]
+qid=174 run=1 row=2084: A==INT((ROW()-1046)/6)+1 C==INT(MOD(ROW()-1046,6)/2)+1 B=Elyza D=生成AI E-K=[2, 3, 4, 4, 5, 4, 3]
+qid=174 run=3 row=2088: A==INT((ROW()-1046)/6)+1 C==INT(MOD(ROW()-1046,6)/2)+1 B=Elyza D=生成AI E-K=[4, 4, 4, 4, 5, 4, 4]
+
+--- Llamaブロック（非破壊確認）---
+r2: A==INT((ROW()-2)/6)+1 B=Llama3.2 D=生成AI E-K=[4, 5, 4, 4, 4, 5, 4]
+r3: A==INT((ROW()-2)/6)+1 B=Llama3.2 D=人間 E-K=[5, 5, 5, 4, 5, 5, 4]
+r1044: A==INT((ROW()-2)/6)+1 B=Llama3.2 D=生成AI E-K=[1, 1, 1, 1, 4, 1, 1]
+r1045: A==INT((ROW()-2)/6)+1 B=Llama3.2 D=人間 E-K=[None, None, None, None, None, None, None]
+
+ELYZAブロック 異常: 0 []
+
+ELYZA 生成AI採点 平均: {'正確性': 3.66, '網羅性': 3.87, '具体性': 3.69, '初心者適合性': 4.15, '安全性/倫理': 4.75, '情報開示適切性': 4.81, '日本語の自然さ': 4.09}
+全体平均: 4.146  件数: 522
