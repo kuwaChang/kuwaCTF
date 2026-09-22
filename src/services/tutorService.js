@@ -3,6 +3,7 @@ const vectorStore = require("./vectorStore");
 const tutorQaLog = require("./tutorQaLog");
 const fs = require("fs");
 const path = require("path");
+const { isQuestionPublished } = require("../utils/quizVisibility");
 
 const MAX_ANSWER_LENGTH = 6000;
 const DEFAULT_OLLAMA_MODEL = "llama3.2";
@@ -118,7 +119,7 @@ class TutorService {
           fs.readFileSync(path.join(require("../config/paths").CONFIG, "quizData.json"), "utf-8")
         );
         const problem = quizData[category]?.[questionId];
-        if (problem) {
+        if (problem && isQuestionPublished(problem)) {
           problemContext = `\n\n現在取り組んでいる問題:\nタイトル: ${problem.title}\n説明: ${problem.desc}\nカテゴリー: ${problem.categoryId || category}`;
         }
       } catch (error) {
@@ -295,7 +296,7 @@ ${contextText}`;
       );
       const problem = quizData[category]?.[questionId];
 
-      if (!problem) {
+      if (!problem || !isQuestionPublished(problem)) {
         const out = {
           answer: "問題が見つかりませんでした。",
           sources: []

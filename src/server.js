@@ -9,6 +9,7 @@ const fs = require("fs");
 const os = require("os");
 const { Server } = require("socket.io");
 const paths = require("./config/paths");
+const { filterPublishedQuizData } = require("./utils/quizVisibility");
 const { router: sadRouter, setSocketIO } = require("./server-sad");
 const crypto = require("crypto");
 const multer = require("multer");
@@ -1409,8 +1410,10 @@ app.get("/api/quizData", (req, res) => {
     try {
       const parsedData = JSON.parse(data);
       const replacedData = replaceLocalhostInQuizData(parsedData);
+      // 非公開問題は一般ユーザーに返さない
+      const publicData = filterPublishedQuizData(replacedData);
       // セキュリティ: 答えを削除してから送信
-      const sanitizedData = removeAnswersFromQuizData(replacedData);
+      const sanitizedData = removeAnswersFromQuizData(publicData);
       res.json(sanitizedData);
     } catch (parseErr) {
       console.error("JSON解析エラー:", parseErr);

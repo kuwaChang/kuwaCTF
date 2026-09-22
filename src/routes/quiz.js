@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const sqlite3 = require("sqlite3").verbose();
 const router = express.Router();
 const paths = require("../config/paths");
+const { isQuestionPublished, filterPublishedQuizData } = require("../utils/quizVisibility");
 
 // storageフォルダが存在しない場合は作成
 const dbDir = paths.STORAGE;
@@ -91,11 +92,11 @@ function requireLogin(req, res, next) {
   next();
 }
 
-// 全問題を返す
+// 全問題を返す（非公開は除外）
 router.get("/all", requireLogin, (req, res) => {
   const data = JSON.parse(fs.readFileSync(quizPath, "utf-8"));
   const replacedData = replaceLocalhostInQuizData(data);
-  res.json(replacedData);
+  res.json(filterPublishedQuizData(replacedData));
 });
 
 // 座標の距離を計算（ハーバサイン公式）
@@ -142,6 +143,9 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
   const question = data[category]?.[qid];
   
   if (!question) return res.status(404).json({ message: "問題が見つかりません" });
+  if (!isQuestionPublished(question) && req.session.role !== "admin") {
+    return res.status(404).json({ message: "問題が見つかりません" });
+  }
   
   // 問題のcategoryIdを取得（実績チェック用）
   const questionCategoryId = question.categoryId || null;

@@ -206,6 +206,36 @@
     button.edit-btn:hover {
       box-shadow: 0 8px 25px rgba(79, 172, 254, 0.5);
     }
+    button.toggle-published-btn {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      box-shadow: 0 4px 15px rgba(67, 233, 123, 0.4);
+      color: #1a3a2a;
+    }
+    button.toggle-published-btn:hover {
+      box-shadow: 0 8px 25px rgba(67, 233, 123, 0.5);
+    }
+    button.toggle-published-btn.unpublished {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+      color: white;
+    }
+    .visibility-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .visibility-badge.published {
+      background: rgba(67, 233, 123, 0.2);
+      color: #1b8a4a;
+    }
+    .visibility-badge.unpublished {
+      background: rgba(245, 87, 108, 0.15);
+      color: #c0392b;
+    }
     .quiz-item {
       border: 1px solid rgba(102, 126, 234, 0.2);
       padding: 25px;
@@ -237,6 +267,10 @@
       box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
       transform: translateY(-4px);
       border-color: rgba(102, 126, 234, 0.4);
+    }
+    .quiz-item.unpublished {
+      border-color: rgba(245, 87, 108, 0.35);
+      background: linear-gradient(135deg, rgba(255, 248, 248, 0.98) 0%, rgba(255, 245, 247, 0.98) 100%);
     }
     .quiz-item h3 {
       color: #667eea;
@@ -565,6 +599,15 @@
       <div class="form-group">
         <label>ポイント <span class="required">*</span></label>
         <input type="number" name="point" id="point" required min="0" value="10">
+      </div>
+
+      <div class="form-group">
+        <label>公開設定 <span class="required">*</span></label>
+        <select name="published" id="published">
+          <option value="true" selected>公開</option>
+          <option value="false">非公開</option>
+        </select>
+        <small>非公開の問題は問題一覧・解答・チューターから見えません</small>
       </div>
 
       <div class="optional-section">

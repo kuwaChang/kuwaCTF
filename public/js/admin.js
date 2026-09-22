@@ -20,30 +20,25 @@ window.removeHintField = function(btn) {
   }
 };
 
-// タブ切り替え機能
-function initAdminTabs() {
+function switchAdminTab(targetId) {
   const tabs = document.querySelectorAll(".tab");
   const contents = document.querySelectorAll(".tab-content");
 
-  tabs.forEach(tab => {
+  tabs.forEach(t => t.classList.toggle("active", t.dataset.target === targetId));
+  contents.forEach(c => c.classList.toggle("active", c.id === targetId));
+
+  if (targetId === "quiz-list") {
+    loadQuizzes();
+  }
+}
+
+// タブ切り替え機能
+function initAdminTabs() {
+  document.querySelectorAll(".tab").forEach(tab => {
     tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("active"));
-      contents.forEach(c => c.classList.remove("active"));
-      tab.classList.add("active");
       const targetId = tab.dataset.target;
       if (targetId) {
-        const targetContent = document.getElementById(targetId);
-        if (targetContent) {
-          targetContent.classList.add("active");
-          
-          // タブ切り替え時にデータを読み込む
-          if (targetId === "quiz-list") {
-            loadQuizzes();
-          } else if (targetId === "user-management") {
-            // ユーザー管理タブでは検索フォームを表示するだけ
-            // 検索はユーザーが実行する
-          }
-        }
+        switchAdminTab(targetId);
       }
     });
   });
@@ -112,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
     quizData.desc = desc;
     quizData.answer = answer;
     quizData.point = point;
+    quizData.published = formData.get("published") !== "false";
 
     // 答えの形式
     const answerType = formData.get("answerType");
@@ -233,6 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     coordinateToleranceGroup.style.display = "none";
     document.getElementById("answerType").value = "flag";
+    document.getElementById("published").value = "true";
   });
 
   // 問題一覧から編集ボタンの処理
@@ -240,12 +237,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.classList.contains("edit-btn")) {
       const category = e.target.dataset.category;
       const qid = e.target.dataset.qid;
-      editQuiz(category, qid);
+      if (category && qid) {
+        editQuiz(category, qid);
+      }
     } else if (e.target.classList.contains("delete-btn")) {
       const category = e.target.dataset.category;
       const qid = e.target.dataset.qid;
       if (confirm(`問題 "${category}/${qid}" を削除しますか？`)) {
         deleteQuiz(category, qid);
+      }
+    } else if (e.target.classList.contains("toggle-published-btn")) {
+      const category = e.target.dataset.category;
+      const qid = e.target.dataset.qid;
+      const currentlyPublished = e.target.dataset.published !== "false";
+      const nextPublished = !currentlyPublished;
+      const actionLabel = nextPublished ? "公開" : "非公開";
+      if (confirm(`問題 "${category}/${qid}" を${actionLabel}にしますか？`)) {
+        toggleQuizPublished(category, qid, nextPublished);
       }
     }
   });
@@ -254,7 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // 問題を編集フォームに読み込む
 async function editQuiz(category, qid) {
   try {
-    const res = await fetch("/admin/quizzes");
+    const res = await fetch("/admin/quizzes", { credentials: "include" });
     const data = await res.json();
     
     if (!data[category] || !data[category][qid]) {
@@ -273,6 +281,7 @@ async function editQuiz(category, qid) {
     document.getElementById("point").value = quiz.point || 10;
     document.getElementById("answerType").value = quiz.answerType || "flag";
     document.getElementById("explanation").value = quiz.explanation || "";
+    document.getElementById("published").value = quiz.published === false ? "false" : "true";
     
     // 座標許容範囲
     if (quiz.answerType === "coordinates") {
@@ -309,11 +318,32 @@ async function editQuiz(category, qid) {
       `;
     }
 
-    // フォームまでスクロール
+    switchAdminTab("quiz-edit");
     document.getElementById("addForm").scrollIntoView({ behavior: "smooth" });
   } catch (err) {
     console.error("編集エラー:", err);
     alert("問題の読み込みに失敗しました");
+  }
+}
+
+async function toggleQuizPublished(category, qid, published) {
+  try {
+    const res = await fetch("/admin/quizzes/published", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, qid, published }),
+      credentials: "include"
+    });
+
+    const result = await res.json();
+    alert(result.message);
+
+    if (res.ok) {
+      loadQuizzes();
+    }
+  } catch (err) {
+    console.error("公開設定の更新エラー:", err);
+    alert("サーバーエラーが発生しました。");
   }
 }
 
@@ -363,17 +393,22 @@ window.loadQuizzes = async function() {
 
       for (const [qid, quiz] of Object.entries(questions)) {
         const quizDiv = document.createElement("div");
-        quizDiv.className = "quiz-item";
+        const isPublished = quiz.published !== false;
+        quizDiv.className = isPublished ? "quiz-item" : "quiz-item unpublished";
+        const publishedLabel = isPublished ? "公開" : "非公開";
+        const toggleLabel = isPublished ? "非公開にする" : "公開する";
         
         quizDiv.innerHTML = `
           <div class="quiz-header">
-            <h3>${quiz.title || qid} (${quiz.point || 0}点)</h3>
+            <h3>${quiz.title || qid} (${quiz.point || 0}点)<span class="visibility-badge ${isPublished ? "published" : "unpublished"}">${publishedLabel}</span></h3>
             <div>
+              <button class="toggle-published-btn ${isPublished ? "" : "unpublished"}" data-category="${category}" data-qid="${qid}" data-published="${isPublished}">${toggleLabel}</button>
               <button class="edit-btn" data-category="${category}" data-qid="${qid}">編集</button>
               <button class="delete-btn delete" data-category="${category}" data-qid="${qid}">削除</button>
             </div>
           </div>
           <p><strong>ID:</strong> ${qid}</p>
+          <p><strong>公開設定:</strong> ${publishedLabel}</p>
           <p><strong>説明:</strong> ${(quiz.desc || "").substring(0, 100)}${(quiz.desc || "").length > 100 ? "..." : ""}</p>
           <p><strong>答え:</strong> ${quiz.answer || ""}</p>
           ${quiz.answerType ? `<p><strong>答えの形式:</strong> ${quiz.answerType}</p>` : ""}

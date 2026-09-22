@@ -7,7 +7,8 @@
       "hint": [
         "フラグはFLAG{welcome}"
       ],
-      "point": 10
+      "point": 10,
+      "published": true
     },
     "beginner1": {
       "answer": "FLAG{rot13}",
@@ -553,8 +554,7 @@
       "title": "★XSS（Cross-Site Scripting）",
       "categoryId": "web",
       "desc": "以下のフォーラムページで実際にXSS攻撃をしてみよう。\n投稿内容にスクリプトを注入して、攻撃成功ページ（/xss/attack-success）にリダイレクトさせることができれば成功です。\n\n⚠️ このページは学習目的で作成されています。実際のWebアプリケーションでは絶対にこのような実装をしないでください。",
-      "hint": [
-      ],
+      "hint": [],
       "point": 50,
       "files": [],
       "url": "http://localhost:3333/html/xss_index.html",
@@ -592,9 +592,7 @@
       "title": "Welcome!",
       "categoryId": "forensics",
       "desc": "FLAGをさがせ！",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": [
         "anthem.flag.txt"
@@ -618,9 +616,7 @@
       "title": "プロパティ",
       "categoryId": "forensics",
       "desc": "ビワについてもっと知りたい。 詳細を見てみよう！",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": [
         "biwa.jpg"
@@ -631,9 +627,7 @@
       "title": "真っ白",
       "categoryId": "forensics",
       "desc": "真っ白！まぶしすぎるよー！",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -642,9 +636,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -653,9 +645,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -664,9 +654,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -675,9 +663,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -686,9 +672,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -697,9 +681,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -708,9 +690,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -719,9 +699,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -730,9 +708,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -741,9 +717,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -752,9 +726,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -763,9 +735,7 @@
       "title": "",
       "categoryId": "forensics",
       "desc": "",
-      "hint": [
-
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     }
@@ -776,9 +746,7 @@
       "title": "Cryptoに興味のあるあなたへ",
       "categoryId": "crypto",
       "desc": "以下のサイトで学習するといいでしょう。 \n\nCryptoHack: https://cryptohack.org/ \n\nCryptopals: https://cryptopals.com/ \n\nDreamhack: https://dreamhack.io/ctf\n\nFLAG{Nice_to_meet_you:)}",
-      "hint": [
-        
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -787,9 +755,7 @@
       "title": "ROT",
       "categoryId": "crypto",
       "desc": "間違えて文字列をずらしちゃった！！ \n\"FLAG\"から始まるのは覚えてるんだけど、どのくらいずらしちゃったんだっけ\n\nSYNT{jrypbzr_gb_pgs}",
-      "hint": [
-        
-      ],
+      "hint": [],
       "point": 10,
       "files": []
     },
@@ -798,9 +764,7 @@
       "title": "手動でやるのはつらい奴",
       "categoryId": "crypto",
       "desc": "20回エンコードされた文字列です。\n 元の文章に戻してあげましょう。 \nゴリ押しでできるならやってみてください。",
-      "hint": [
-        
-      ],
+      "hint": [],
       "point": 10,
       "files": [
         "make_base64x20.py",
@@ -835,9 +799,7 @@
       "title": "素数なのか素数じゃないのか！どっちなんだい！",
       "categoryId": "crypto",
       "desc": "以下の数字が素数か判定しなさい．スタートを数字の1とし，素数ならx100を，素数でないなら+100をし，合計を求めよ．\n\n999681217\n999681186\n140628287\n140168112\n\n例えば，True, False, Trueなら1 * 100 + 100 * 100 = 10100",
-      "hint": [
-        
-      ],
+      "hint": [],
       "point": 15,
       "files": []
     },
@@ -857,9 +819,7 @@
       "title": "SHA256",
       "categoryId": "crypto",
       "desc": "\"FLAG\"のSHA256ハッシュ値を計算してみてください。\n\nFALG{\"ハッシュ値\"}",
-      "hint": [
-        
-      ],
+      "hint": [],
       "point": 20,
       "files": []
     },
@@ -868,9 +828,7 @@
       "title": "easy_RSA",
       "categoryId": "crypto",
       "desc": "２つの鍵があるけど、どっちの鍵を使えばいいのだ？ \nそれともどちらの鍵も使うのか？",
-      "hint": [
-        
-      ],
+      "hint": [],
       "point": 30,
       "files": [
         "private-key.pem",
@@ -883,9 +841,7 @@
       "title": "CodeDecode",
       "categoryId": "crypto",
       "desc": "コンピュータはどのようにして文字を表現しているのでしょうか。これはその一つです。何と書いてあるか解読してください！\n\n46 4c 41 47 7b 41 53 43 49 49 43 6f 64 65 7d",
-      "hint": [
-        
-      ],
+      "hint": [],
       "point": 50,
       "files": []
     },
@@ -894,9 +850,7 @@
       "title": "==__==",
       "categoryId": "crypto",
       "desc": "Welcome!\n\nWWVzLCBJJ20gdGhlIGNsb3duDQpJJ20gdGhlIGpva2UgeW91J3ZlRkxBR3tXZWxjb21lXzQwbVBfc29uZ3N9DQphbHdheXMga25vd24gbWUgYXMsIHNvDQpXaGlsZSBJJ20geW91ciBwdXBwZXQsIHdvdWxkIHlvdSBraW5kbHkNClBsZWFzZSBwbGF5IHdpdGggbWUgYWdhaW4=",
-      "hint": [
-        
-      ],
+      "hint": [],
       "point": 50,
       "files": []
     },
@@ -929,9 +883,7 @@
       "title": "one-up",
       "categoryId": "crypto",
       "desc": "これは暗号化できてないですよね。",
-      "hint": [
-        
-      ],
+      "hint": [],
       "point": 90,
       "files": [
         "one-up.py",
@@ -943,9 +895,7 @@
       "title": "シーザス",
       "categoryId": "crypto",
       "desc": "これはとってもシンプルな暗号化ですね！\n\nSYNT{pnrfne}",
-      "hint": [
-        
-      ],
+      "hint": [],
       "point": 100,
       "files": []
     }
