@@ -50,6 +50,7 @@ let allUsersData = [];
 // 答えの形式が変更された時の処理
 document.addEventListener("DOMContentLoaded", () => {
   initAdminTabs();
+  initQuizListFilters();
   loadQuizzes();
   
   // ユーザー検索フォームのイベントリスナー
@@ -370,6 +371,172 @@ async function deleteQuiz(category, qid) {
 }
 
 // 問題一覧を表示（グローバル関数として定義）
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function truncateText(value, max) {
+  const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  if (text.length <= max) return text;
+  return `${text.slice(0, max)}...`;
+}
+
+let allQuizzesData = {};
+
+function initQuizListFilters() {
+  const searchInput = document.getElementById("quizSearchInput");
+  const categoryFilter = document.getElementById("quizFilterCategory");
+  const publishedFilter = document.getElementById("quizFilterPublished");
+  if (searchInput) {
+    searchInput.addEventListener("input", renderQuizList);
+  }
+  if (categoryFilter) {
+    categoryFilter.addEventListener("change", renderQuizList);
+  }
+  if (publishedFilter) {
+    publishedFilter.addEventListener("change", renderQuizList);
+  }
+}
+
+function collectQuizRows(data) {
+  const rows = [];
+  for (const [category, questions] of Object.entries(data || {})) {
+    if (!questions || typeof questions !== "object") continue;
+    for (const [qid, quiz] of Object.entries(questions)) {
+      rows.push({ category, qid, quiz });
+    }
+  }
+  return rows;
+}
+
+function matchesQuizFilters(row) {
+  const searchInput = document.getElementById("quizSearchInput");
+  const categoryFilter = document.getElementById("quizFilterCategory");
+  const publishedFilter = document.getElementById("quizFilterPublished");
+  const keyword = (searchInput?.value || "").trim().toLowerCase();
+  const categoryValue = categoryFilter?.value || "";
+  const publishedValue = publishedFilter?.value || "";
+  const isPublished = row.quiz.published !== false;
+
+  if (categoryValue && row.category !== categoryValue) return false;
+  if (publishedValue === "published" && !isPublished) return false;
+  if (publishedValue === "unpublished" && isPublished) return false;
+  if (!keyword) return true;
+
+  const haystack = [
+    row.category,
+    row.qid,
+    row.quiz.title,
+    row.quiz.desc,
+    row.quiz.answer,
+    row.quiz.categoryId,
+    row.quiz.answerType,
+    Array.isArray(row.quiz.files) ? row.quiz.files.join(" ") : ""
+  ].join(" ").toLowerCase();
+  return haystack.includes(keyword);
+}
+
+function updateQuizCategoryFilter(data) {
+  const categoryFilter = document.getElementById("quizFilterCategory");
+  if (!categoryFilter) return;
+  const selected = categoryFilter.value;
+  const categories = Object.keys(data || {});
+  categoryFilter.innerHTML = `<option value="">すべてのカテゴリ</option>${
+    categories.map((cat) => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join("")
+  }`;
+  if (categories.includes(selected)) {
+    categoryFilter.value = selected;
+  }
+}
+
+function renderQuizList() {
+  const container = document.getElementById("quizList");
+  const countEl = document.getElementById("quizListCount");
+  if (!container) return;
+
+  const allRows = collectQuizRows(allQuizzesData);
+  const rows = allRows.filter(matchesQuizFilters);
+  if (countEl) {
+    countEl.textContent = `${rows.length} / ${allRows.length} 件`;
+  }
+
+  container.innerHTML = "";
+  if (rows.length === 0) {
+    container.innerHTML = `<p class="quiz-empty">一致する問題がありません</p>`;
+    return;
+  }
+
+  const grouped = new Map();
+  for (const row of rows) {
+    if (!grouped.has(row.category)) grouped.set(row.category, []);
+    grouped.get(row.category).push(row);
+  }
+
+  for (const [category, items] of grouped.entries()) {
+    const categoryDiv = document.createElement("div");
+    categoryDiv.className = "category-section";
+
+    const categoryTitle = document.createElement("div");
+    categoryTitle.className = "category-title";
+    categoryTitle.innerHTML = `${escapeHtml(category)}<span class="category-count">${items.length}件</span>`;
+    categoryDiv.appendChild(categoryTitle);
+
+    const wrap = document.createElement("div");
+    wrap.className = "quiz-table-wrap";
+    const table = document.createElement("table");
+    table.className = "quiz-table";
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th class="quiz-col-pub">公開</th>
+          <th class="quiz-col-id">ID</th>
+          <th class="quiz-col-title">タイトル</th>
+          <th class="quiz-col-point">点</th>
+          <th class="quiz-col-type">形式</th>
+          <th class="quiz-col-answer">答え</th>
+          <th class="quiz-col-actions">操作</th>
+        </tr>
+      </thead>
+    `;
+    const tbody = document.createElement("tbody");
+    for (const { qid, quiz } of items) {
+      const isPublished = quiz.published !== false;
+      const publishedLabel = isPublished ? "公開" : "非公開";
+      const toggleLabel = isPublished ? "非公開にする" : "公開する";
+      const answerType = quiz.answerType === "coordinates" ? "座標" : "FLAG";
+      const tr = document.createElement("tr");
+      if (!isPublished) tr.className = "unpublished";
+      tr.innerHTML = `
+        <td><span class="visibility-badge ${isPublished ? "published" : "unpublished"}">${publishedLabel}</span></td>
+        <td>${escapeHtml(qid)}</td>
+        <td class="quiz-col-title" title="${escapeHtml(quiz.title || qid)}">
+          <div class="quiz-title-main">${escapeHtml(quiz.title || qid)}</div>
+          <div class="quiz-title-sub">${escapeHtml(truncateText(quiz.desc || "", 80))}</div>
+        </td>
+        <td>${escapeHtml(quiz.point || 0)}</td>
+        <td>${answerType}</td>
+        <td class="quiz-answer-cell" title="${escapeHtml(quiz.answer || "")}">${escapeHtml(quiz.answer || "")}</td>
+        <td>
+          <div class="quiz-actions">
+            <button type="button" class="toggle-published-btn ${isPublished ? "" : "unpublished"}" data-category="${escapeHtml(category)}" data-qid="${escapeHtml(qid)}" data-published="${isPublished}">${toggleLabel}</button>
+            <button type="button" class="edit-btn" data-category="${escapeHtml(category)}" data-qid="${escapeHtml(qid)}">編集</button>
+            <button type="button" class="delete-btn delete" data-category="${escapeHtml(category)}" data-qid="${escapeHtml(qid)}">削除</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    categoryDiv.appendChild(wrap);
+    container.appendChild(categoryDiv);
+  }
+}
+
 window.loadQuizzes = async function() {
   try {
     const res = await fetch("/admin/quizzes", { credentials: "include" });
@@ -377,51 +544,9 @@ window.loadQuizzes = async function() {
       alert("読み込み失敗");
       return;
     }
-    const data = await res.json();
-    
-    const container = document.getElementById("quizList");
-    container.innerHTML = "";
-
-    for (const [category, questions] of Object.entries(data)) {
-      const categoryDiv = document.createElement("div");
-      categoryDiv.className = "category-section";
-      
-      const categoryTitle = document.createElement("div");
-      categoryTitle.className = "category-title";
-      categoryTitle.textContent = category;
-      categoryDiv.appendChild(categoryTitle);
-
-      for (const [qid, quiz] of Object.entries(questions)) {
-        const quizDiv = document.createElement("div");
-        const isPublished = quiz.published !== false;
-        quizDiv.className = isPublished ? "quiz-item" : "quiz-item unpublished";
-        const publishedLabel = isPublished ? "公開" : "非公開";
-        const toggleLabel = isPublished ? "非公開にする" : "公開する";
-        
-        quizDiv.innerHTML = `
-          <div class="quiz-header">
-            <h3>${quiz.title || qid} (${quiz.point || 0}点)<span class="visibility-badge ${isPublished ? "published" : "unpublished"}">${publishedLabel}</span></h3>
-            <div>
-              <button class="toggle-published-btn ${isPublished ? "" : "unpublished"}" data-category="${category}" data-qid="${qid}" data-published="${isPublished}">${toggleLabel}</button>
-              <button class="edit-btn" data-category="${category}" data-qid="${qid}">編集</button>
-              <button class="delete-btn delete" data-category="${category}" data-qid="${qid}">削除</button>
-            </div>
-          </div>
-          <p><strong>ID:</strong> ${qid}</p>
-          <p><strong>公開設定:</strong> ${publishedLabel}</p>
-          <p><strong>説明:</strong> ${(quiz.desc || "").substring(0, 100)}${(quiz.desc || "").length > 100 ? "..." : ""}</p>
-          <p><strong>答え:</strong> ${quiz.answer || ""}</p>
-          ${quiz.answerType ? `<p><strong>答えの形式:</strong> ${quiz.answerType}</p>` : ""}
-          ${quiz.hint && quiz.hint.length > 0 ? `<p><strong>ヒント数:</strong> ${quiz.hint.length}個</p>` : ""}
-          ${quiz.files && quiz.files.length > 0 ? `<p><strong>ファイル:</strong> ${quiz.files.join(", ")}</p>` : ""}
-          ${quiz.explanation ? `<p><strong>解説:</strong> <a href="${quiz.explanation}" target="_blank">${quiz.explanation}</a></p>` : ""}
-        `;
-        
-        categoryDiv.appendChild(quizDiv);
-      }
-      
-      container.appendChild(categoryDiv);
-    }
+    allQuizzesData = await res.json();
+    updateQuizCategoryFilter(allQuizzesData);
+    renderQuizList();
   } catch (err) {
     console.error("読み込みエラー:", err);
     alert("問題の読み込みに失敗しました");

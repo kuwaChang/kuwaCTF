@@ -325,18 +325,132 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 15px;
-      margin-bottom: 25px;
+      margin-bottom: 16px;
     }
     .quiz-list-header button {
       margin: 0;
     }
+    .quiz-list-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .quiz-list-toolbar input[type="search"],
+    .quiz-list-toolbar select {
+      max-width: none;
+      width: auto;
+      flex: 1 1 180px;
+      margin: 0;
+    }
+    .quiz-list-toolbar input[type="search"] {
+      flex: 2 1 280px;
+    }
+    #quizListCount {
+      color: #667eea;
+      font-weight: 700;
+      font-size: 14px;
+      white-space: nowrap;
+      margin-left: auto;
+    }
+    .quiz-table-wrap {
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid rgba(102, 126, 234, 0.18);
+    }
+    .quiz-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: #fff;
+      text-align: left;
+    }
+    .quiz-table th {
+      background: #667eea;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 10px 12px;
+      position: sticky;
+      top: 0;
+    }
+    .quiz-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eef0f6;
+      color: #333;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+    .quiz-table tbody tr:hover {
+      background: rgba(102, 126, 234, 0.06);
+    }
+    .quiz-table tbody tr.unpublished {
+      background: rgba(245, 87, 108, 0.06);
+    }
+    .quiz-table th,
+    .quiz-table td {
+      overflow: hidden;
+    }
+    .quiz-table .quiz-col-pub { width: 8%; }
+    .quiz-table .quiz-col-id { width: 12%; }
+    .quiz-table .quiz-col-title { width: 28%; }
+    .quiz-table .quiz-col-point { width: 6%; }
+    .quiz-table .quiz-col-type { width: 8%; }
+    .quiz-table .quiz-col-answer { width: 16%; }
+    .quiz-table .quiz-col-actions { width: 22%; }
+    .quiz-title-main {
+      font-weight: 700;
+      color: #333;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .quiz-title-sub {
+      color: #888;
+      font-size: 12px;
+      margin-top: 3px;
+      line-height: 1.4;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .quiz-answer-cell {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .quiz-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .quiz-actions button {
+      margin: 0;
+      padding: 8px 10px;
+      font-size: 12px;
+      min-width: auto;
+    }
+    .quiz-empty {
+      text-align: center;
+      color: #888;
+      padding: 40px 20px;
+    }
+    .category-title .category-count {
+      font-size: 14px;
+      font-weight: 600;
+      color: #888;
+      margin-left: 8px;
+    }
     .category-section {
-      margin: 40px 0;
+      margin: 16px 0 28px;
     }
     .category-title {
-      font-size: 32px;
+      font-size: 22px;
       font-weight: 700;
-      margin: 40px 0 25px 0;
+      margin: 8px 0 12px 0;
       padding-bottom: 15px;
       border-bottom: 4px solid;
       border-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%) 1;
@@ -455,12 +569,24 @@
         margin-right: 0;
         margin-bottom: 10px;
       }
-      .quiz-list-header {
+      .quiz-list-toolbar {
         flex-direction: column;
         align-items: stretch;
       }
-      .quiz-list-header button {
+      .quiz-list-toolbar input[type="search"],
+      .quiz-list-toolbar select {
         width: 100%;
+        flex: none;
+      }
+      #quizListCount {
+        margin-left: 0;
+      }
+      .quiz-table-wrap {
+        margin: 0;
+      }
+      .quiz-actions button {
+        width: auto;
+        margin-bottom: 0;
       }
       .tabs {
         flex-direction: column;
@@ -661,7 +787,19 @@
     <div id="quizListContainer" class="form-section">
       <div class="quiz-list-header">
         <h2>問題一覧</h2>
-        <button onclick="loadQuizzes()">更新</button>
+        <button type="button" onclick="loadQuizzes()">更新</button>
+      </div>
+      <div class="quiz-list-toolbar">
+        <input type="search" id="quizSearchInput" placeholder="タイトル・ID・答え・説明で検索">
+        <select id="quizFilterCategory">
+          <option value="">すべてのカテゴリ</option>
+        </select>
+        <select id="quizFilterPublished">
+          <option value="">公開・非公開</option>
+          <option value="published">公開のみ</option>
+          <option value="unpublished">非公開のみ</option>
+        </select>
+        <span id="quizListCount"></span>
       </div>
       <div id="quizList"></div>
     </div>
