@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" type="text/css" href="../css/index.css">
+  <title>意見箱</title>
+  <style>
+    .feedback-container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 30px;
+      background: rgba(250, 252, 255, 0.98);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    .feedback-container h1 {
+      color: #667eea;
+      text-align: center;
+      margin-top: 0;
+    }
+    .feedback-lead {
+      text-align: center;
+      color: #555;
+      margin-bottom: 28px;
+    }
+    .feedback-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .feedback-card h2 {
+      color: #667eea;
+      font-size: 22px;
+      margin-top: 0;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-weight: 600;
+      color: #333;
+    }
+    input[type="text"],
+    select,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+    }
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+    button {
+      margin-top: 16px;
+      padding: 12px 22px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.secondary {
+      background: #f5576c;
+    }
+    .status {
+      margin-top: 12px;
+      min-height: 1.2em;
+      font-size: 14px;
+    }
+    .status.ok { color: #1b7f3a; }
+    .status.ng { color: #c0392b; }
+    .item {
+      border-top: 1px solid #eee;
+      padding: 16px 0 8px;
+      color: #111;
+      text-align: left;
+    }
+    .item:first-child { border-top: none; }
+    .item-title {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .item-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eef1ff;
+      color: #445;
+      font-size: 12px;
+      margin-right: 6px;
+    }
+    .badge.open { background: #fff3cd; }
+    .badge.in_progress { background: #d6eaff; }
+    .badge.done { background: #d9f5e3; }
+    .badge.declined { background: #f0f0f0; }
+    .meta { color: #666; font-size: 13px; }
+    .body-text, .reply-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+      color: #111;
+      text-align: left;
+    }
+    .body-text {
+      padding: 12px 14px;
+      background: #f6f7fb;
+      border-radius: 8px;
+    }
+    .reply {
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: #f3f6ff;
+      border-radius: 8px;
+      color: #111;
+      text-align: left;
+    }
+    .reply strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+    .reply-text {
+      color: #000;
+    }
+    .links { text-align: center; }
+    .links a { margin: 0 10px; }
+    .empty { color: #777; }
+  </style>
+</head>
+<body>
+  <div class="feedback-container">
+    <h1>意見箱</h1>
+    <p class="feedback-lead">サーバーの改善点や、直してほしい点を送れます。対応状況は下の一覧で確認できます。</p>
+
+    <section class="feedback-card">
+      <h2>意見を送る</h2>
+      <form id="feedbackForm">
+        <label for="category">種類</label>
+        <select id="category" name="category" required>
+          <option value="improvement">改善点</option>
+          <option value="bug">不具合</option>
+          <option value="other">その他</option>
+        </select>
+
+        <label for="title">件名</label>
+        <input id="title" name="title" type="text" maxlength="80" required placeholder="例: ランキングの更新が遅い">
+
+        <label for="body">内容</label>
+        <textarea id="body" name="body" maxlength="2000" required placeholder="気づいたこと、再現手順、こうしてほしいこと"></textarea>
+
+        <button type="submit">送信</button>
+        <p id="formStatus" class="status"></p>
+      </form>
+    </section>
+
+    <section class="feedback-card">
+      <h2>自分の意見</h2>
+      <div id="mineList"></div>
+    </section>
+
+    <p class="links">
+      <a href="/">ホームに戻る</a>
+      <a href="/mypage">マイページ</a>
+    </p>
+  </div>
+  <script type="module" src="../js/feedback.js"></script>
+</body>
+</html>

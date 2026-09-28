@@ -668,6 +668,70 @@
       border-radius: 0 0 20px 20px;
       margin-top: 0;
     }
+    #feedback .feedback-item {
+      text-align: left;
+      background: #fff;
+      border: 1px solid #e4e7f2;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0 0;
+      box-shadow: none;
+    }
+    #feedback .feedback-item h3 {
+      margin: 0 0 6px;
+      text-align: left;
+      color: #222;
+    }
+    #feedback .feedback-meta {
+      margin: 0 0 12px;
+      color: #666;
+      font-size: 13px;
+      text-align: left;
+    }
+    #feedback .feedback-body {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      background: #f6f7fb;
+      border-radius: 8px;
+      color: #111;
+      text-align: left;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #feedback .feedback-item label {
+      display: block;
+      width: auto;
+      margin: 0 0 6px;
+      text-align: left;
+      color: #333;
+    }
+    #feedback .feedback-item select,
+    #feedback .feedback-item textarea {
+      display: block;
+      width: 100%;
+      max-width: none;
+      margin: 0 0 14px;
+      text-align: left;
+      color: #111;
+    }
+    #feedback .feedback-item textarea {
+      min-height: 120px;
+    }
+    #feedback .feedback-item select:focus,
+    #feedback .feedback-item textarea:focus {
+      transform: none;
+    }
+    #feedback .feedback-item button {
+      display: inline-block;
+      width: auto;
+      margin: 0;
+    }
+    #feedback .feedback-result {
+      margin: 8px 0 0;
+      text-align: left;
+      color: #333;
+      min-height: 1.2em;
+    }
   </style>
 </head>
 <body>
@@ -677,6 +741,7 @@
     <div class="tab active" data-target="quiz-edit">問題編集</div>
     <div class="tab" data-target="quiz-list">問題一覧</div>
     <div class="tab" data-target="user-management">ユーザー管理</div>
+    <div class="tab" data-target="feedback">意見箱</div>
   </div>
 
   <!-- 問題編集タブ -->
@@ -823,6 +888,27 @@
         </div>
       </form>
       <div id="userList"></div>
+    </div>
+  </div>
+
+  <!-- 意見箱タブ -->
+  <div id="feedback" class="tab-content">
+    <div class="form-section">
+      <div class="quiz-list-header">
+        <h2>意見箱</h2>
+        <button type="button" id="feedbackRefreshBtn">更新</button>
+      </div>
+      <div class="quiz-list-toolbar">
+        <select id="feedbackStatusFilter">
+          <option value="">すべての状態</option>
+          <option value="open">未対応</option>
+          <option value="in_progress">対応中</option>
+          <option value="done">対応済み</option>
+          <option value="declined">見送り</option>
+        </select>
+        <span id="feedbackCount"></span>
+      </div>
+      <div id="feedbackList"></div>
     </div>
   </div>
 

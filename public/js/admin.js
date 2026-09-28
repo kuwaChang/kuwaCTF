@@ -30,6 +30,9 @@ function switchAdminTab(targetId) {
   if (targetId === "quiz-list") {
     loadQuizzes();
   }
+  if (targetId === "feedback") {
+    loadFeedback();
+  }
 }
 
 // タブ切り替え機能
@@ -54,6 +57,15 @@ document.addEventListener("DOMContentLoaded", () => {
   loadQuizzes();
   
   // ユーザー検索フォームのイベントリスナー
+  const feedbackRefreshBtn = document.getElementById("feedbackRefreshBtn");
+  const feedbackStatusFilter = document.getElementById("feedbackStatusFilter");
+  if (feedbackRefreshBtn) {
+    feedbackRefreshBtn.addEventListener("click", () => loadFeedback());
+  }
+  if (feedbackStatusFilter) {
+    feedbackStatusFilter.addEventListener("change", () => loadFeedback());
+  }
+
   const userSearchForm = document.getElementById("userSearchForm");
   if (userSearchForm) {
     userSearchForm.addEventListener("submit", async (e) => {
@@ -781,3 +793,122 @@ window.deleteUser = async function(userid) {
 // ============================================================
 // [一時機能 / TEMP] ここまで
 // ============================================================
+
+const FEEDBACK_STATUSES = [
+  ["open", "未対応"],
+  ["in_progress", "対応中"],
+  ["done", "対応済み"],
+  ["declined", "見送り"],
+];
+
+function formatFeedbackTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value || "";
+  }
+  return date.toLocaleString("ja-JP");
+}
+
+async function loadFeedback() {
+  const list = document.getElementById("feedbackList");
+  const count = document.getElementById("feedbackCount");
+  if (!list) {
+    return;
+  }
+
+  const status = document.getElementById("feedbackStatusFilter")?.value || "";
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  list.textContent = "読み込み中...";
+
+  try {
+    const res = await fetch(`/admin/feedback${query}`, { credentials: "include" });
+    const data = await res.json();
+    if (!res.ok) {
+      list.textContent = data.message || "意見の取得に失敗しました";
+      return;
+    }
+
+    const counts = data.counts || {};
+    if (count) {
+      count.textContent = `未対応 ${counts.open || 0} / 対応中 ${counts.in_progress || 0} / 対応済み ${counts.done || 0} / 見送り ${counts.declined || 0}`;
+    }
+
+    list.replaceChildren();
+    if (!data.items || data.items.length === 0) {
+      list.textContent = "意見はありません。";
+      return;
+    }
+
+    for (const item of data.items) {
+      list.appendChild(renderFeedbackItem(item));
+    }
+  } catch (err) {
+    console.error("意見箱の読み込みエラー:", err);
+    list.textContent = "意見の取得に失敗しました";
+  }
+}
+
+function renderFeedbackItem(item) {
+  const card = document.createElement("article");
+  card.className = "feedback-item";
+
+  const title = document.createElement("h3");
+  title.textContent = item.title;
+
+  const meta = document.createElement("p");
+  meta.className = "feedback-meta";
+  meta.textContent = `${item.categoryLabel} / ${item.username}（${item.userid}） / ${formatFeedbackTime(item.createdAt)}`;
+
+  const body = document.createElement("p");
+  body.className = "feedback-body";
+  body.textContent = item.body;
+
+  const statusLabel = document.createElement("label");
+  statusLabel.textContent = "状態";
+  const statusSelect = document.createElement("select");
+  for (const [value, label] of FEEDBACK_STATUSES) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    option.selected = value === item.status;
+    statusSelect.appendChild(option);
+  }
+
+  const replyLabel = document.createElement("label");
+  replyLabel.textContent = "返信（送信者に表示されます）";
+  const reply = document.createElement("textarea");
+  reply.maxLength = 1000;
+  reply.value = item.adminReply || "";
+
+  const save = document.createElement("button");
+  save.type = "button";
+  save.textContent = "保存";
+  const result = document.createElement("p");
+  result.className = "feedback-result";
+
+  save.addEventListener("click", async () => {
+    result.textContent = "保存中...";
+    try {
+      const res = await fetch(`/admin/feedback/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          status: statusSelect.value,
+          adminReply: reply.value,
+        }),
+      });
+      const data = await res.json();
+      result.textContent = data.message || "更新に失敗しました";
+      if (res.ok) {
+        await loadFeedback();
+      }
+    } catch (err) {
+      console.error("意見箱の更新エラー:", err);
+      result.textContent = "更新に失敗しました";
+    }
+  });
+
+  card.append(title, meta, body, statusLabel, statusSelect, replyLabel, reply, save, result);
+  return card;
+}

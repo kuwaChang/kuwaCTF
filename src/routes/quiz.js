@@ -185,6 +185,21 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
         return res.json({ correct: true, alreadySolved: true, message: "既に解答済みです" });
       }
 
+      // クライアント申告と hint_opened の両方で判定する。
+      // 申告が未送信でも、ヒント欄を開いた記録があればヒント使用とみなす。
+      db.get(
+        "SELECT 1 AS opened FROM hint_opened WHERE userid = ? AND category = ? AND qid = ?",
+        [userid, category, qid],
+        (hintErr, hintRow) => {
+          if (hintErr) {
+            console.error("ヒント使用確認エラー:", hintErr);
+          }
+          const hintWasUsed = !!usedHint || !!hintRow;
+          beginSolveRecord(hintWasUsed);
+        }
+      );
+
+      function beginSolveRecord(hintWasUsed) {
       // スコア更新と実績チェックを実行する関数
       const executeScoreUpdateAndAchievementCheck = () => {
         // 新規正解を解答ログに記録（連続正解・日次正解・ノーミス判定用）
@@ -227,7 +242,7 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
             .catch(err => console.error("実績チェックエラー:", err));
           
           // ヒントなし解答実績チェック
-          if (!usedHint) {
+          if (!hintWasUsed) {
             checkAchievements(userid, "no_hint_solve", { solved: true, used_hint: false })
               .then(unlocked => {
                 if (unlocked.length > 0) {
@@ -264,7 +279,7 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
       // INSERTを実行する関数
       const executeInsert = () => {
         // ヒント使用フラグ（0または1）を記録
-        const usedHintFlag = usedHint ? 1 : 0;
+        const usedHintFlag = hintWasUsed ? 1 : 0;
         
         // まず、used_hintカラムが存在するかどうかを確認してから適切なINSERT文を実行
         // テーブル構造を確認するために、まず4カラムで試行
@@ -301,6 +316,7 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
         // カラム追加後（または既に存在する場合）にINSERTを実行
         executeInsert();
       });
+      }
     });
   } else {
     // 不正解も「挑戦」としてログに記録（CTF中毒の日次挑戦カウント用）
@@ -346,6 +362,387 @@ db.run(`CREATE TABLE IF NOT EXISTS answer_attempts (
   } else {
     console.log("✅ answer_attemptsテーブル確認/作成完了");
   }
+});
+
+const WRITEUP_MAX = 10000;
+const REPLY_MAX = 1000;
+
+db.run(`CREATE TABLE IF NOT EXISTS writeups (
+  userid TEXT NOT NULL,
+  category TEXT NOT NULL,
+  qid TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (userid, category, qid)
+)`, (err) => {
+  if (err) {
+    console.error("writeupsテーブル作成エラー:", err);
+  } else {
+    console.log("✅ writeupsテーブル確認/作成完了");
+  }
+});
+
+db.run(`CREATE TABLE IF NOT EXISTS writeup_votes (
+  writeup_userid TEXT NOT NULL,
+  category TEXT NOT NULL,
+  qid TEXT NOT NULL,
+  voter_userid TEXT NOT NULL,
+  vote TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (writeup_userid, category, qid, voter_userid)
+)`, (err) => {
+  if (err) console.error("writeup_votesテーブル作成エラー:", err);
+});
+
+db.run(`CREATE TABLE IF NOT EXISTS writeup_replies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  writeup_userid TEXT NOT NULL,
+  category TEXT NOT NULL,
+  qid TEXT NOT NULL,
+  userid TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL
+)`, (err) => {
+  if (err) console.error("writeup_repliesテーブル作成エラー:", err);
+});
+
+function cleanWriteup(value, maxLength = WRITEUP_MAX) {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/\r\n/g, "\n")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function loadQuestion(category, qid) {
+  const data = JSON.parse(fs.readFileSync(quizPath, "utf-8"));
+  return data[category]?.[qid] || null;
+}
+
+function findSolved(userid, category, qid, callback) {
+  db.get(
+    "SELECT 1 AS solved FROM solved WHERE userid = ? AND category = ? AND qid = ?",
+    [userid, category, qid],
+    callback
+  );
+}
+
+// 解いた問題の writeup 一覧。未解答の問題は本文を返さない。
+router.get("/writeups", requireLogin, (req, res) => {
+  const category = typeof req.query.category === "string" ? req.query.category : "";
+  const qid = typeof req.query.qid === "string" ? req.query.qid : "";
+  const userid = req.session.userid;
+
+  if (!category || !qid) {
+    return res.status(400).json({ message: "問題が指定されていません" });
+  }
+
+  const question = loadQuestion(category, qid);
+  if (!question || (!isQuestionPublished(question) && req.session.role !== "admin")) {
+    return res.status(404).json({ message: "問題が見つかりません" });
+  }
+
+  findSolved(userid, category, qid, (err, solved) => {
+    if (err) {
+      console.error("writeup閲覧の解答確認エラー:", err);
+      return res.status(500).json({ message: "writeupの取得に失敗しました" });
+    }
+    if (!solved) {
+      return res.status(403).json({ message: "解いた問題のwriteupだけ閲覧できます" });
+    }
+
+    db.all(
+      `SELECT w.userid, COALESCE(u.username, w.userid) AS username, w.body, w.updated_at,
+              (SELECT COUNT(*) FROM writeup_votes v
+                WHERE v.writeup_userid = w.userid AND v.category = w.category AND v.qid = w.qid AND v.vote = 'good') AS good_count,
+              (SELECT COUNT(*) FROM writeup_votes v
+                WHERE v.writeup_userid = w.userid AND v.category = w.category AND v.qid = w.qid AND v.vote = 'bad') AS bad_count,
+              (SELECT vote FROM writeup_votes v
+                WHERE v.writeup_userid = w.userid AND v.category = w.category AND v.qid = w.qid AND v.voter_userid = ?) AS my_vote
+       FROM writeups w
+       LEFT JOIN users u ON u.userid = w.userid
+       WHERE w.category = ? AND w.qid = ?
+       ORDER BY CASE WHEN w.userid = ? THEN 0 ELSE 1 END, w.updated_at DESC`,
+      [userid, category, qid, userid],
+      (listErr, rows) => {
+        if (listErr) {
+          console.error("writeup取得エラー:", listErr);
+          return res.status(500).json({ message: "writeupの取得に失敗しました" });
+        }
+        db.all(
+          `SELECT r.id, r.writeup_userid, r.userid, COALESCE(u.username, r.userid) AS username, r.body, r.created_at
+           FROM writeup_replies r
+           LEFT JOIN users u ON u.userid = r.userid
+           WHERE r.category = ? AND r.qid = ?
+           ORDER BY r.id ASC`,
+          [category, qid],
+          (replyErr, replyRows) => {
+            if (replyErr) {
+              console.error("writeup返信取得エラー:", replyErr);
+              return res.status(500).json({ message: "writeupの取得に失敗しました" });
+            }
+            const repliesByAuthor = new Map();
+            for (const reply of replyRows || []) {
+              const list = repliesByAuthor.get(reply.writeup_userid) || [];
+              list.push({
+                id: reply.id,
+                username: reply.username,
+                body: reply.body,
+                createdAt: reply.created_at,
+                mine: reply.userid === userid,
+              });
+              repliesByAuthor.set(reply.writeup_userid, list);
+            }
+            const items = (rows || []).map((row) => ({
+              authorId: row.userid,
+              username: row.username,
+              body: row.body,
+              updatedAt: row.updated_at,
+              mine: row.userid === userid,
+              goodCount: row.good_count || 0,
+              badCount: row.bad_count || 0,
+              myVote: row.my_vote || null,
+              replies: repliesByAuthor.get(row.userid) || [],
+            }));
+            const mine = items.find((item) => item.mine) || null;
+            res.json({
+              items,
+              mine: mine ? { body: mine.body, updatedAt: mine.updatedAt } : null,
+            });
+          }
+        );
+      }
+    );
+  });
+});
+
+// 自分の writeup を保存する。未解答の問題には書けない。
+router.put("/writeups", requireLogin, (req, res) => {
+  const category = req.body && typeof req.body.category === "string" ? req.body.category : "";
+  const qid = req.body && typeof req.body.qid === "string" ? req.body.qid : "";
+  const body = cleanWriteup(req.body && req.body.body);
+  const userid = req.session.userid;
+
+  if (!category || !qid) {
+    return res.status(400).json({ message: "問題が指定されていません" });
+  }
+  if (!body) {
+    return res.status(400).json({ message: "writeupを入力してください" });
+  }
+
+  const question = loadQuestion(category, qid);
+  if (!question || (!isQuestionPublished(question) && req.session.role !== "admin")) {
+    return res.status(404).json({ message: "問題が見つかりません" });
+  }
+
+  findSolved(userid, category, qid, (err, solved) => {
+    if (err) {
+      console.error("writeup保存の解答確認エラー:", err);
+      return res.status(500).json({ message: "writeupの保存に失敗しました" });
+    }
+    if (!solved) {
+      return res.status(403).json({ message: "解いた問題にだけwriteupを書けます" });
+    }
+
+    const now = new Date().toISOString();
+    db.run(
+      `INSERT INTO writeups (userid, category, qid, body, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(userid, category, qid) DO UPDATE SET
+         body = excluded.body,
+         updated_at = excluded.updated_at`,
+      [userid, category, qid, body, now, now],
+      (saveErr) => {
+        if (saveErr) {
+          console.error("writeup保存エラー:", saveErr);
+          return res.status(500).json({ message: "writeupの保存に失敗しました" });
+        }
+        res.json({ message: "writeupを保存しました", updatedAt: now });
+      }
+    );
+  });
+});
+
+// 自分の writeup を削除する。
+router.delete("/writeups", requireLogin, (req, res) => {
+  const category = req.body && typeof req.body.category === "string" ? req.body.category : "";
+  const qid = req.body && typeof req.body.qid === "string" ? req.body.qid : "";
+  const userid = req.session.userid;
+
+  if (!category || !qid) {
+    return res.status(400).json({ message: "問題が指定されていません" });
+  }
+
+  db.run(
+    "DELETE FROM writeups WHERE userid = ? AND category = ? AND qid = ?",
+    [userid, category, qid],
+    function (err) {
+      if (err) {
+        console.error("writeup削除エラー:", err);
+        return res.status(500).json({ message: "writeupの削除に失敗しました" });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ message: "writeupが見つかりません" });
+      }
+      db.run(
+        "DELETE FROM writeup_votes WHERE writeup_userid = ? AND category = ? AND qid = ?",
+        [userid, category, qid],
+        () => {
+          db.run(
+            "DELETE FROM writeup_replies WHERE writeup_userid = ? AND category = ? AND qid = ?",
+            [userid, category, qid],
+            () => res.json({ message: "writeupを削除しました" })
+          );
+        }
+      );
+    }
+  );
+});
+
+function requireSolvedWriteup(req, res, category, qid, authorId, onOk) {
+  if (!category || !qid || !authorId) {
+    return res.status(400).json({ message: "writeupが指定されていません" });
+  }
+  const question = loadQuestion(category, qid);
+  if (!question || (!isQuestionPublished(question) && req.session.role !== "admin")) {
+    return res.status(404).json({ message: "問題が見つかりません" });
+  }
+  findSolved(req.session.userid, category, qid, (err, solved) => {
+    if (err) {
+      console.error("writeup操作の解答確認エラー:", err);
+      return res.status(500).json({ message: "操作に失敗しました" });
+    }
+    if (!solved) {
+      return res.status(403).json({ message: "解いた問題のwriteupだけ操作できます" });
+    }
+    db.get(
+      "SELECT 1 AS ok FROM writeups WHERE userid = ? AND category = ? AND qid = ?",
+      [authorId, category, qid],
+      (writeupErr, writeup) => {
+        if (writeupErr) {
+          console.error("writeup確認エラー:", writeupErr);
+          return res.status(500).json({ message: "操作に失敗しました" });
+        }
+        if (!writeup) {
+          return res.status(404).json({ message: "writeupが見つかりません" });
+        }
+        onOk();
+      }
+    );
+  });
+}
+
+// 同じ問題を解いた人だけが Good / Bad を付けられる。同じボタンをもう一度押すと取り消す。
+router.post("/writeups/vote", requireLogin, (req, res) => {
+  const category = req.body && typeof req.body.category === "string" ? req.body.category : "";
+  const qid = req.body && typeof req.body.qid === "string" ? req.body.qid : "";
+  const authorId = req.body && typeof req.body.authorId === "string" ? req.body.authorId : "";
+  const vote = req.body && req.body.vote;
+  const userid = req.session.userid;
+
+  if (vote !== "good" && vote !== "bad") {
+    return res.status(400).json({ message: "GoodまたはBadを選んでください" });
+  }
+  if (authorId === userid) {
+    return res.status(400).json({ message: "自分のwriteupは評価できません" });
+  }
+
+  requireSolvedWriteup(req, res, category, qid, authorId, () => {
+    db.get(
+      `SELECT vote FROM writeup_votes
+       WHERE writeup_userid = ? AND category = ? AND qid = ? AND voter_userid = ?`,
+      [authorId, category, qid, userid],
+      (err, row) => {
+        if (err) {
+          console.error("writeup評価確認エラー:", err);
+          return res.status(500).json({ message: "評価に失敗しました" });
+        }
+        if (row && row.vote === vote) {
+          db.run(
+            `DELETE FROM writeup_votes
+             WHERE writeup_userid = ? AND category = ? AND qid = ? AND voter_userid = ?`,
+            [authorId, category, qid, userid],
+            (deleteErr) => {
+              if (deleteErr) {
+                console.error("writeup評価取消エラー:", deleteErr);
+                return res.status(500).json({ message: "評価に失敗しました" });
+              }
+              res.json({ message: "評価を取り消しました" });
+            }
+          );
+          return;
+        }
+        const now = new Date().toISOString();
+        db.run(
+          `INSERT INTO writeup_votes (writeup_userid, category, qid, voter_userid, vote, created_at)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON CONFLICT(writeup_userid, category, qid, voter_userid) DO UPDATE SET
+             vote = excluded.vote,
+             created_at = excluded.created_at`,
+          [authorId, category, qid, userid, vote, now],
+          (saveErr) => {
+            if (saveErr) {
+              console.error("writeup評価保存エラー:", saveErr);
+              return res.status(500).json({ message: "評価に失敗しました" });
+            }
+            res.json({ message: vote === "good" ? "Goodを付けました" : "Badを付けました" });
+          }
+        );
+      }
+    );
+  });
+});
+
+// 同じ問題を解いた人だけが返信できる。
+router.post("/writeups/replies", requireLogin, (req, res) => {
+  const category = req.body && typeof req.body.category === "string" ? req.body.category : "";
+  const qid = req.body && typeof req.body.qid === "string" ? req.body.qid : "";
+  const authorId = req.body && typeof req.body.authorId === "string" ? req.body.authorId : "";
+  const body = cleanWriteup(req.body && req.body.body, REPLY_MAX);
+  const userid = req.session.userid;
+
+  if (!body) {
+    return res.status(400).json({ message: "返信を入力してください" });
+  }
+
+  requireSolvedWriteup(req, res, category, qid, authorId, () => {
+    const now = new Date().toISOString();
+    db.run(
+      `INSERT INTO writeup_replies (writeup_userid, category, qid, userid, body, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [authorId, category, qid, userid, body, now],
+      function (err) {
+        if (err) {
+          console.error("writeup返信保存エラー:", err);
+          return res.status(500).json({ message: "返信に失敗しました" });
+        }
+        res.json({ message: "返信しました", id: this.lastID });
+      }
+    );
+  });
+});
+
+router.delete("/writeups/replies", requireLogin, (req, res) => {
+  const id = Number(req.body && req.body.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ message: "返信が指定されていません" });
+  }
+  db.run(
+    "DELETE FROM writeup_replies WHERE id = ? AND userid = ?",
+    [id, req.session.userid],
+    function (err) {
+      if (err) {
+        console.error("writeup返信削除エラー:", err);
+        return res.status(500).json({ message: "返信の削除に失敗しました" });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ message: "自分の返信だけ削除できます" });
+      }
+      res.json({ message: "返信を削除しました" });
+    }
+  );
 });
 
 // 解答ログを記録するヘルパー

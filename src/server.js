@@ -1996,10 +1996,13 @@ try {
   const tutorRoutes = require("./routes/tutor");
   //console.log("✅ tutorルート読み込み完了");
   const { router: decorationRoutes } = require("./routes/decorations");
+  const { router: feedbackRoutes, adminRouter: feedbackAdminRoutes } = require("./routes/feedback");
 
   app.use("/auth", authRoutes);
   app.use("/quiz", quizRoutes);
+  app.use("/admin/feedback", feedbackAdminRoutes);
   app.use("/admin", adminRoutes);
+  app.use("/feedback", feedbackRoutes);
   app.use("/achievements", achievementRoutes);
   app.use("/tutor", tutorRoutes);
   app.use("/decorations", decorationRoutes);
