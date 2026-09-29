@@ -171,29 +171,8 @@ const iconUpload = multer({
   }
 });
 
-const dbPath = path.join(paths.STORAGE, "users.db");
 const sessionsDbPath = path.join(paths.STORAGE, "sessions.sqlite");
-//console.log("[server.js] データベースパス:", dbPath);
-//console.log("[server.js] ファイル存在確認:", fs.existsSync(dbPath));
-//console.log("[server.js] sessions.sqliteパス:", sessionsDbPath);
-//console.log("[server.js] sessions.sqlite存在確認:", fs.existsSync(sessionsDbPath));
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    //console.error("データベース接続エラー (server.js):", err);
-    //console.error("データベースパス:", dbPath);
-  } else {
-    //console.log("[server.js] データベース接続成功");
-  }
-});
-db.on('error', (err) => {
-  //console.error("❌ データベースエラー (server.js):", err.message);
-  //console.error("   エラーコード:", err.code);
-  //console.error("   エラー番号:", err.errno);
-  console.error("   データベースパス:", dbPath);
-  if (err.stack) {
-    //console.error("   スタックトレース:", err.stack);
-  }
-});
+const db = require("./db/usersDb");
 // SQLインジェクション練習用データベース（別ファイル）
 const sqlDbPath = path.join(paths.UPLOADS, "user_database.db");
 const sqlDb = new sqlite3.Database(sqlDbPath);

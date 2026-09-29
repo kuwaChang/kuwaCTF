@@ -1,8 +1,7 @@
 const express = require("express");
-const fs = require("fs");
 const path = require("path");
-const sqlite3 = require("sqlite3").verbose();
 const paths = require("../config/paths");
+const db = require("../db/usersDb");
 
 const CATEGORIES = {
   improvement: "改善点",
@@ -24,12 +23,6 @@ const DAILY_LIMIT = 10;
 
 const router = express.Router();
 const adminRouter = express.Router();
-
-if (!fs.existsSync(paths.STORAGE)) {
-  fs.mkdirSync(paths.STORAGE, { recursive: true });
-}
-
-const db = new sqlite3.Database(path.join(paths.STORAGE, "users.db"));
 
 db.run(`CREATE TABLE IF NOT EXISTS feedback (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

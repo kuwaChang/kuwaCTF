@@ -1,25 +1,11 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const sqlite3 = require("sqlite3").verbose();
 const router = express.Router();
 const paths = require("../config/paths");
+const db = require("../db/usersDb");
 
-// storageフォルダが存在しない場合は作成
-const dbDir = paths.STORAGE;
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
-
-const dbPath = path.join(paths.STORAGE, "users.db");
 const achievementsPath = path.join(paths.CONFIG, "achievements.json");
-
-// データベース接続
-const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-  if (err) {
-    console.error("❌ データベース接続エラー (achievements.js):", err.message);
-  }
-});
 
 function requireLogin(req, res, next) {
   if (!req.session.userid) return res.status(401).json({ message: "ログインが必要です" });

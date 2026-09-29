@@ -2,7 +2,6 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
-const sqlite3 = require("sqlite3").verbose();
 const bcrypt = require("bcrypt");
 const router = express.Router();
 
@@ -21,43 +20,7 @@ const { parsePublished } = require("../utils/quizVisibility");
 const quizPath = path.join(paths.CONFIG, "quizData.json");
 const uploadDir = paths.UPLOADS;
 
-// storageフォルダが存在しない場合は作成
-const dbDir = paths.STORAGE;
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
-
-const dbPath = path.join(paths.STORAGE, "users.db");
-//console.log("[admin.js] データベースパス:", dbPath);
-//console.log("[admin.js] ファイル存在確認:", fs.existsSync(dbPath));
-//console.log("[admin.js] ディレクトリ存在確認:", fs.existsSync(path.dirname(dbPath)));
-let db;
-try {
-  db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-    if (err) {
-      console.error("❌ データベース接続エラー (admin.js):", err.message);
-      console.error("   エラーコード:", err.code);
-      console.error("   エラー番号:", err.errno);
-      console.error("   データベースパス:", dbPath);
-      console.error("   スタックトレース:", err.stack);
-    } else {
-      //console.log("✅ [admin.js] データベース接続成功");
-    }
-  });
-} catch (err) {
-  console.error("❌ データベース作成時の例外 (admin.js):", err.message);
-  console.error("   スタックトレース:", err.stack);
-  throw err;
-}
-db.on('error', (err) => {
-  console.error("❌ データベースエラー (admin.js):", err.message);
-  console.error("   エラーコード:", err.code);
-  console.error("   エラー番号:", err.errno);
-  console.error("   データベースパス:", dbPath);
-  if (err.stack) {
-    console.error("   スタックトレース:", err.stack);
-  }
-});
+const db = require("../db/usersDb");
 
 
 // セキュリティ: 許可するファイル拡張子

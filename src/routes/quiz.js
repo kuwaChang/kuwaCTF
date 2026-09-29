@@ -3,48 +3,10 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
-const sqlite3 = require("sqlite3").verbose();
 const router = express.Router();
 const paths = require("../config/paths");
+const db = require("../db/usersDb");
 const { isQuestionPublished, filterPublishedQuizData } = require("../utils/quizVisibility");
-
-// storageフォルダが存在しない場合は作成
-const dbDir = paths.STORAGE;
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
-
-const dbPath = path.join(paths.STORAGE, "users.db");
-//console.log("[quiz.js] データベースパス:", dbPath);
-//console.log("[quiz.js] ファイル存在確認:", fs.existsSync(dbPath));
-//console.log("[quiz.js] ディレクトリ存在確認:", fs.existsSync(path.dirname(dbPath)));
-let db;
-try {
-  db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-    if (err) {
-      console.error("❌ データベース接続エラー (quiz.js):", err.message);
-      console.error("   エラーコード:", err.code);
-      console.error("   エラー番号:", err.errno);
-      console.error("   データベースパス:", dbPath);
-      console.error("   スタックトレース:", err.stack);
-    } else {
-      //console.log("✅ [quiz.js] データベース接続成功");
-    }
-  });
-} catch (err) {
-  console.error("❌ データベース作成時の例外 (quiz.js):", err.message);
-  console.error("   スタックトレース:", err.stack);
-  throw err;
-}
-db.on('error', (err) => {
-  console.error("❌ データベースエラー (quiz.js):", err.message);
-  console.error("   エラーコード:", err.code);
-  console.error("   エラー番号:", err.errno);
-  console.error("   データベースパス:", dbPath);
-  if (err.stack) {
-    console.error("   スタックトレース:", err.stack);
-  }
-});
 const quizPath = path.join(paths.CONFIG, "quizData.json");
 
 // サーバーのIPアドレスを取得する関数
