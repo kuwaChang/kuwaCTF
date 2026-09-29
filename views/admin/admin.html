@@ -732,6 +732,117 @@
       color: #333;
       min-height: 1.2em;
     }
+    #announcements .announcement-item,
+    #announcements form {
+      text-align: left;
+    }
+    #announcements .announcement-item {
+      background: #fff;
+      border: 1px solid #e4e7f2;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0 0;
+    }
+    #announcements .announcement-item > h3 {
+      margin: 0 0 6px;
+      text-align: left;
+      color: #222;
+    }
+    #announcements .announcement-meta {
+      margin: 0 0 12px;
+      color: #666;
+      font-size: 13px;
+      text-align: left;
+    }
+    #announcements .announcement-body {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      background: #f6f7fb;
+      border-radius: 8px;
+      color: #111;
+      text-align: left;
+      line-height: 1.7;
+      word-break: break-word;
+    }
+    #announcements .announcement-body > :first-child { margin-top: 0; }
+    #announcements .announcement-body > :last-child { margin-bottom: 0; }
+    #announcements .announcement-body p,
+    #announcements .announcement-body ul,
+    #announcements .announcement-body ol,
+    #announcements .announcement-body blockquote,
+    #announcements .announcement-body pre,
+    #announcements .announcement-body table { margin: 0 0 0.8em; }
+    #announcements .announcement-body h1,
+    #announcements .announcement-body h2,
+    #announcements .announcement-body h3,
+    #announcements .announcement-body h4 {
+      margin: 0.8em 0 0.35em;
+      color: #1f2937;
+      text-align: left;
+    }
+    #announcements .announcement-body ul,
+    #announcements .announcement-body ol { padding-left: 1.4em; }
+    #announcements .announcement-body a { color: #4f46e5; }
+    #announcements .announcement-body code {
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+      background: #e7eaf2;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    #announcements .announcement-body pre {
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #e2e8f0;
+      overflow-x: auto;
+    }
+    #announcements .announcement-body pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+    #announcements .announcement-body blockquote {
+      padding-left: 0.9em;
+      border-left: 3px solid #667eea;
+    }
+    #announcements .announcement-body img {
+      max-width: 100%;
+      height: auto;
+    }
+    #announcementPreview {
+      min-height: 72px;
+    }
+    #announcements .announcement-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    #announcements .announcement-actions button {
+      width: auto;
+      margin: 0;
+    }
+    #announcements .announcement-status {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      vertical-align: middle;
+    }
+    #announcements .announcement-status.published {
+      background: #dcfce7;
+      color: #166534;
+    }
+    #announcements .announcement-status.draft {
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+    #announcementFormResult {
+      text-align: left;
+      color: #333;
+      min-height: 1.2em;
+    }
   </style>
 </head>
 <body>
@@ -741,6 +852,7 @@
     <div class="tab active" data-target="quiz-edit">問題編集</div>
     <div class="tab" data-target="quiz-list">問題一覧</div>
     <div class="tab" data-target="user-management">ユーザー管理</div>
+    <div class="tab" data-target="announcements">お知らせ</div>
     <div class="tab" data-target="feedback">意見箱</div>
   </div>
 
@@ -891,6 +1003,45 @@
     </div>
   </div>
 
+  <!-- お知らせタブ -->
+  <div id="announcements" class="tab-content">
+    <div class="form-section">
+      <h2 id="announcementFormTitle">お知らせを追加</h2>
+      <form id="announcementForm">
+        <div class="form-group">
+          <label>件名 <span class="required">*</span></label>
+          <input type="text" id="announcementTitle" maxlength="80" required placeholder="例: メンテナンスのお知らせ">
+        </div>
+        <div class="form-group">
+          <label>本文 <span class="required">*</span></label>
+          <textarea id="announcementBody" maxlength="4000" required placeholder="例: **重要** な連絡です&#10;- 詳細はこちら"></textarea>
+          <small>本文はマークダウンとして表示されます（見出し、箇条書き、リンク、コード）</small>
+        </div>
+        <div class="form-group">
+          <label>プレビュー</label>
+          <div id="announcementPreview" class="announcement-body"></div>
+        </div>
+        <div class="form-group">
+          <label>公開設定</label>
+          <select id="announcementPublished">
+            <option value="true" selected>公開</option>
+            <option value="false">非公開</option>
+          </select>
+          <small>非公開のお知らせは利用者の「お知らせ」タブに表示されません</small>
+        </div>
+        <button type="submit" id="announcementSubmit">追加</button>
+        <button type="button" id="announcementCancel" hidden>キャンセル</button>
+        <p id="announcementFormResult"></p>
+      </form>
+
+      <div class="quiz-list-header">
+        <h2>お知らせ一覧</h2>
+        <button type="button" id="announcementRefreshBtn">更新</button>
+      </div>
+      <div id="announcementAdminList"></div>
+    </div>
+  </div>
+
   <!-- 意見箱タブ -->
   <div id="feedback" class="tab-content">
     <div class="form-section">
@@ -912,6 +1063,7 @@
     </div>
   </div>
 
+  <script type="module" src="/js/markdown.js"></script>
   <script src="/js/admin.js"></script>
 </body>
 </html>

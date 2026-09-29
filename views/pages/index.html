@@ -18,7 +18,7 @@
   <!-- CSSとJSはquiz.jsで動的に読み込む -->
   <style>
     .hidden { display: none; }
-    .tabs { display: flex; margin-bottom: 10px; }
+    .tabs { display: flex; flex-wrap: wrap; margin-bottom: 10px; gap: 6px; }
     .tab { padding: 10px 20px; cursor: pointer; border: 1px solid #000000; border-bottom: none; background: #fcfcfc; }
     .tab.active { background: rgb(255, 255, 255); font-weight: bold; }
     .tab-content { border: 1px solid #aaa; padding: 15px; display: none; }
@@ -138,6 +138,7 @@
       <div class="tab" data-target="score">得点</div>
       <div class="tab" data-target="result_check">ランキング</div>
       <div class="tab" data-target="achievements">実績</div>
+      <div class="tab" data-target="announcements">お知らせ<span id="announcementBadge" class="tab-badge" hidden></span></div>
     </div>
 
   <!--タブの内容-->
@@ -197,6 +198,12 @@
     </div>
   </div>
 
+  <!--サーバーからのお知らせ-->
+  <div id="announcements" class="tab-content">
+    <h2>サーバーからのお知らせ</h2>
+    <div id="announcementList" class="announcement-list"></div>
+  </div>
+
   <!--実績表示-->
   <div id="achievements" class="tab-content">
     <h2>実績</h2>
@@ -208,8 +215,19 @@
   <!-- 問題モーダル（タブの外：非アクティブな .tab-content は display:none のため、その子だと表示されない） -->
   <div id="modal" class="modal">
     <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2 id="modal-title"></h2>
+      <div class="modal-header">
+        <h2 id="modal-title"></h2>
+        <div class="modal-header-actions">
+          <a
+            id="modal-tutor-btn"
+            class="modal-tutor-btn"
+            href="/tutor"
+            target="_blank"
+            rel="noopener noreferrer"
+          >AIチューター</a>
+          <span class="close" aria-label="閉じる">&times;</span>
+        </div>
+      </div>
       <p id="modal-category-id" class="modal-category-id hidden"></p>
       <p id="modal-desc"></p>
       <p><strong>得点:</strong> <span id="modal-point"></span> 点</p>

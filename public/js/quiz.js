@@ -543,6 +543,12 @@ function openModal(category, qid, evt = null) {
 
   document.getElementById("modal-title").textContent = q.title;
 
+  const tutorBtn = document.getElementById("modal-tutor-btn");
+  if (tutorBtn) {
+    const params = new URLSearchParams({ category, questionId: qid });
+    tutorBtn.href = `/tutor?${params.toString()}`;
+  }
+
   const categoryIdEl = document.getElementById("modal-category-id");
   const cid =
     q.categoryId != null && String(q.categoryId).trim() !== ""

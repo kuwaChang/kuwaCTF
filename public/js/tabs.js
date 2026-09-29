@@ -2,12 +2,15 @@ import { loadScore } from "./quiz.js";
 import { loadRanking } from "./ranking.js";
 import { loadAchievements } from "./achievements.js";
 import { initCodeEditor } from "./code-editor.js";
+import { loadAnnouncements, refreshAnnouncementBadge } from "./announcements.js";
 
 let codeEditorInitialized = false;
 
 export function initTabs() {
   const tabs = document.querySelectorAll(".tab");
   const contents = document.querySelectorAll(".tab-content");
+
+  refreshAnnouncementBadge();
 
   tabs.forEach(tab => {
     tab.addEventListener("click", () => {
@@ -16,7 +19,9 @@ export function initTabs() {
       tab.classList.add("active");
       document.getElementById(tab.dataset.target).classList.add("active");
 
-      if (tab.dataset.target === "result_check") {
+      if (tab.dataset.target === "announcements") {
+        loadAnnouncements();
+      } else if (tab.dataset.target === "result_check") {
         loadRanking();
       } else if (tab.dataset.target === "score") {
         loadScore();

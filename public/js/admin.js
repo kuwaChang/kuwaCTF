@@ -33,6 +33,9 @@ function switchAdminTab(targetId) {
   if (targetId === "feedback") {
     loadFeedback();
   }
+  if (targetId === "announcements") {
+    loadAnnouncements();
+  }
 }
 
 // タブ切り替え機能
@@ -65,6 +68,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (feedbackStatusFilter) {
     feedbackStatusFilter.addEventListener("change", () => loadFeedback());
   }
+
+  initAnnouncementAdmin();
 
   const userSearchForm = document.getElementById("userSearchForm");
   if (userSearchForm) {
@@ -910,5 +915,207 @@ function renderFeedbackItem(item) {
   });
 
   card.append(title, meta, body, statusLabel, statusSelect, replyLabel, reply, save, result);
+  return card;
+}
+
+let editingAnnouncementId = null;
+
+function formatAnnouncementTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value || "";
+  }
+  return date.toLocaleString("ja-JP");
+}
+
+function resetAnnouncementForm() {
+  editingAnnouncementId = null;
+  const form = document.getElementById("announcementForm");
+  const title = document.getElementById("announcementFormTitle");
+  const submit = document.getElementById("announcementSubmit");
+  const cancel = document.getElementById("announcementCancel");
+  const result = document.getElementById("announcementFormResult");
+  if (form) form.reset();
+  if (title) title.textContent = "お知らせを追加";
+  if (submit) submit.textContent = "追加";
+  if (cancel) cancel.hidden = true;
+  if (result) result.textContent = "";
+  const published = document.getElementById("announcementPublished");
+  if (published) published.value = "true";
+  updateAnnouncementPreview();
+}
+
+function fillAnnouncementForm(item) {
+  editingAnnouncementId = item.id;
+  document.getElementById("announcementFormTitle").textContent = "お知らせを編集";
+  document.getElementById("announcementTitle").value = item.title;
+  document.getElementById("announcementBody").value = item.body;
+  document.getElementById("announcementPublished").value = item.published ? "true" : "false";
+  document.getElementById("announcementSubmit").textContent = "更新";
+  document.getElementById("announcementCancel").hidden = false;
+  document.getElementById("announcementFormResult").textContent = "";
+  updateAnnouncementPreview();
+  document.getElementById("announcementForm").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function updateAnnouncementPreview() {
+  const preview = document.getElementById("announcementPreview");
+  const body = document.getElementById("announcementBody");
+  if (!preview || !body) return;
+  if (!body.value.trim()) {
+    preview.textContent = "ここに表示イメージが出ます";
+    return;
+  }
+  if (typeof window.renderMarkdown === "function") {
+    preview.innerHTML = window.renderMarkdown(body.value);
+    return;
+  }
+  preview.textContent = body.value;
+}
+
+function initAnnouncementAdmin() {
+  const form = document.getElementById("announcementForm");
+  const cancel = document.getElementById("announcementCancel");
+  const refresh = document.getElementById("announcementRefreshBtn");
+  const body = document.getElementById("announcementBody");
+  if (!form) return;
+
+  if (body) {
+    body.addEventListener("input", updateAnnouncementPreview);
+  }
+  updateAnnouncementPreview();
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const result = document.getElementById("announcementFormResult");
+    const payload = {
+      title: document.getElementById("announcementTitle").value,
+      body: document.getElementById("announcementBody").value,
+      published: document.getElementById("announcementPublished").value === "true",
+    };
+    const editing = editingAnnouncementId;
+    result.textContent = editing ? "更新中..." : "保存中...";
+
+    try {
+      const res = await fetch(editing ? `/admin/announcements/${editing}` : "/admin/announcements", {
+        method: editing ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      result.textContent = data.message || "保存に失敗しました";
+      if (res.ok) {
+        resetAnnouncementForm();
+        result.textContent = data.message || "保存しました";
+        await loadAnnouncements();
+      }
+    } catch (err) {
+      console.error("お知らせの保存エラー:", err);
+      result.textContent = "保存に失敗しました";
+    }
+  });
+
+  if (cancel) {
+    cancel.addEventListener("click", () => resetAnnouncementForm());
+  }
+  if (refresh) {
+    refresh.addEventListener("click", () => loadAnnouncements());
+  }
+}
+
+async function loadAnnouncements() {
+  const list = document.getElementById("announcementAdminList");
+  if (!list) return;
+
+  list.textContent = "読み込み中...";
+
+  try {
+    const res = await fetch("/admin/announcements", { credentials: "include" });
+    const data = await res.json();
+    if (!res.ok) {
+      list.textContent = data.message || "お知らせの取得に失敗しました";
+      return;
+    }
+
+    const items = data.items || [];
+    list.replaceChildren();
+    if (items.length === 0) {
+      list.textContent = "お知らせはありません。";
+      return;
+    }
+
+    for (const item of items) {
+      list.appendChild(renderAnnouncementItem(item));
+    }
+  } catch (err) {
+    console.error("お知らせの読み込みエラー:", err);
+    list.textContent = "お知らせの取得に失敗しました";
+  }
+}
+
+function renderAnnouncementItem(item) {
+  const card = document.createElement("article");
+  card.className = "announcement-item";
+
+  const title = document.createElement("h3");
+  title.textContent = item.title;
+  const status = document.createElement("span");
+  status.className = `announcement-status ${item.published ? "published" : "draft"}`;
+  status.textContent = item.published ? "公開" : "非公開";
+  title.appendChild(status);
+
+  const meta = document.createElement("p");
+  meta.className = "announcement-meta";
+  const updated = item.updatedAt && item.updatedAt !== item.createdAt
+    ? ` / 更新 ${formatAnnouncementTime(item.updatedAt)}`
+    : "";
+  meta.textContent = `${formatAnnouncementTime(item.createdAt)}${updated}`;
+
+  const body = document.createElement("div");
+  body.className = "announcement-body";
+  body.innerHTML = typeof window.renderMarkdown === "function"
+    ? window.renderMarkdown(item.body)
+    : "";
+  if (typeof window.renderMarkdown !== "function") {
+    body.textContent = item.body;
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "announcement-actions";
+
+  const edit = document.createElement("button");
+  edit.type = "button";
+  edit.textContent = "編集";
+  edit.addEventListener("click", () => fillAnnouncementForm(item));
+
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "delete";
+  remove.textContent = "削除";
+  remove.addEventListener("click", async () => {
+    if (!confirm(`「${item.title}」を削除しますか？`)) return;
+    try {
+      const res = await fetch(`/admin/announcements/${item.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || "削除に失敗しました");
+        return;
+      }
+      if (editingAnnouncementId === item.id) {
+        resetAnnouncementForm();
+      }
+      await loadAnnouncements();
+    } catch (err) {
+      console.error("お知らせの削除エラー:", err);
+      alert("削除に失敗しました");
+    }
+  });
+
+  actions.append(edit, remove);
+  card.append(title, meta, body, actions);
   return card;
 }

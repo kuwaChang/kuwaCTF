@@ -1976,11 +1976,14 @@ try {
   //console.log("✅ tutorルート読み込み完了");
   const { router: decorationRoutes } = require("./routes/decorations");
   const { router: feedbackRoutes, adminRouter: feedbackAdminRoutes } = require("./routes/feedback");
+  const { router: announcementRoutes, adminRouter: announcementAdminRoutes } = require("./routes/announcements");
 
   app.use("/auth", authRoutes);
   app.use("/quiz", quizRoutes);
+  app.use("/admin/announcements", announcementAdminRoutes);
   app.use("/admin/feedback", feedbackAdminRoutes);
   app.use("/admin", adminRoutes);
+  app.use("/announcements", announcementRoutes);
   app.use("/feedback", feedbackRoutes);
   app.use("/achievements", achievementRoutes);
   app.use("/tutor", tutorRoutes);
