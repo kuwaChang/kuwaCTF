@@ -48,6 +48,10 @@ const mainDirectives = {
     "blob:",
     "https://*.tile.openstreetmap.org",
     "https://tile.openstreetmap.org",
+    "https://server.arcgisonline.com",
+    "https://services.arcgisonline.com",
+    "https://*.arcgisonline.com",
+    "https://cyberjapandata.gsi.go.jp",
   ],
   objectSrc: ["'none'"],
   scriptSrc: [

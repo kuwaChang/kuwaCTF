@@ -17,6 +17,7 @@ function sanitizeFilename(filename) {
 }
 
 const paths = require("../config/paths");
+const { parsePublished } = require("../utils/quizVisibility");
 const quizPath = path.join(paths.CONFIG, "quizData.json");
 const uploadDir = paths.UPLOADS;
 
@@ -203,7 +204,8 @@ router.post("/addQuiz", requireAdmin, upload.array("files"), (req, res) => {
       hint: hints.map(h => h.trim()).filter(h => h.length > 0),
       answerType,
       coordinateTolerance: coordinateTolerance ? parseFloat(coordinateTolerance) : undefined,
-      explanation
+      explanation,
+      published: parsePublished(req.body.published)
     };
   }
 
@@ -242,12 +244,15 @@ router.post("/addQuiz", requireAdmin, upload.array("files"), (req, res) => {
     // カテゴリがなければ作成
     if (!data[category]) data[category] = {};
 
-    // 問題データを構築
+    // 既存フィールド（categoryId など）を維持したうえで上書き
+    const existing = data[category][qid] || {};
     const questionData = {
+      ...existing,
       answer: answer.trim(),
       title: title.trim(),
       desc: desc.trim(),
-      point: parseInt(point) || 0
+      point: parseInt(point) || 0,
+      published: parsePublished(quizData.published)
     };
 
     // 任意項目：答えの形式
@@ -256,6 +261,9 @@ router.post("/addQuiz", requireAdmin, upload.array("files"), (req, res) => {
       if (quizData.answerType === "coordinates" && quizData.coordinateTolerance) {
         questionData.coordinateTolerance = parseFloat(quizData.coordinateTolerance);
       }
+    } else {
+      delete questionData.answerType;
+      delete questionData.coordinateTolerance;
     }
 
     // 任意項目：ヒント
@@ -266,10 +274,7 @@ router.post("/addQuiz", requireAdmin, upload.array("files"), (req, res) => {
     // 任意項目：ファイル
     if (fileNames.length > 0) {
       questionData.files = fileNames;
-    } else if (data[category][qid] && data[category][qid].files) {
-      // 既存の問題で、ファイルが指定されていない場合は既存のファイルを維持
-      questionData.files = data[category][qid].files;
-    } else {
+    } else if (!questionData.files) {
       questionData.files = [];
     }
 
@@ -287,6 +292,38 @@ router.post("/addQuiz", requireAdmin, upload.array("files"), (req, res) => {
     console.error("保存エラー:", err);
     // セキュリティ: エラー詳細をクライアントに返さない
     res.status(500).json({ message: "保存中にエラーが発生しました" });
+  }
+});
+
+// 管理者用API：公開・非公開の切り替え
+router.put("/quizzes/published", requireAdmin, (req, res) => {
+  const category = typeof req.body.category === "string" ? req.body.category.trim() : "";
+  const qid = typeof req.body.qid === "string" ? req.body.qid.trim() : "";
+
+  if (!category || !qid) {
+    return res.status(400).json({ message: "カテゴリとIDが必要です" });
+  }
+  if (category.includes("..") || qid.includes("..") || category.length > 50 || qid.length > 50) {
+    return res.status(400).json({ message: "無効なカテゴリまたはIDです" });
+  }
+
+  const isPublished = parsePublished(req.body.published);
+
+  try {
+    const data = JSON.parse(fs.readFileSync(quizPath, "utf8"));
+    if (!data[category]?.[qid]) {
+      return res.status(404).json({ message: "該当の問題が見つかりません" });
+    }
+
+    data[category][qid].published = isPublished;
+    fs.writeFileSync(quizPath, JSON.stringify(data, null, 2), "utf8");
+    res.json({
+      message: isPublished ? "問題を公開しました" : "問題を非公開にしました",
+      published: isPublished
+    });
+  } catch (err) {
+    console.error("公開設定の更新エラー:", err);
+    res.status(500).json({ message: "公開設定の更新中にエラーが発生しました" });
   }
 });
 

@@ -20,30 +20,28 @@ window.removeHintField = function(btn) {
   }
 };
 
-// タブ切り替え機能
-function initAdminTabs() {
+function switchAdminTab(targetId) {
   const tabs = document.querySelectorAll(".tab");
   const contents = document.querySelectorAll(".tab-content");
 
-  tabs.forEach(tab => {
+  tabs.forEach(t => t.classList.toggle("active", t.dataset.target === targetId));
+  contents.forEach(c => c.classList.toggle("active", c.id === targetId));
+
+  if (targetId === "quiz-list") {
+    loadQuizzes();
+  }
+  if (targetId === "feedback") {
+    loadFeedback();
+  }
+}
+
+// タブ切り替え機能
+function initAdminTabs() {
+  document.querySelectorAll(".tab").forEach(tab => {
     tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("active"));
-      contents.forEach(c => c.classList.remove("active"));
-      tab.classList.add("active");
       const targetId = tab.dataset.target;
       if (targetId) {
-        const targetContent = document.getElementById(targetId);
-        if (targetContent) {
-          targetContent.classList.add("active");
-          
-          // タブ切り替え時にデータを読み込む
-          if (targetId === "quiz-list") {
-            loadQuizzes();
-          } else if (targetId === "user-management") {
-            // ユーザー管理タブでは検索フォームを表示するだけ
-            // 検索はユーザーが実行する
-          }
-        }
+        switchAdminTab(targetId);
       }
     });
   });
@@ -55,9 +53,19 @@ let allUsersData = [];
 // 答えの形式が変更された時の処理
 document.addEventListener("DOMContentLoaded", () => {
   initAdminTabs();
+  initQuizListFilters();
   loadQuizzes();
   
   // ユーザー検索フォームのイベントリスナー
+  const feedbackRefreshBtn = document.getElementById("feedbackRefreshBtn");
+  const feedbackStatusFilter = document.getElementById("feedbackStatusFilter");
+  if (feedbackRefreshBtn) {
+    feedbackRefreshBtn.addEventListener("click", () => loadFeedback());
+  }
+  if (feedbackStatusFilter) {
+    feedbackStatusFilter.addEventListener("change", () => loadFeedback());
+  }
+
   const userSearchForm = document.getElementById("userSearchForm");
   if (userSearchForm) {
     userSearchForm.addEventListener("submit", async (e) => {
@@ -112,6 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
     quizData.desc = desc;
     quizData.answer = answer;
     quizData.point = point;
+    quizData.published = formData.get("published") !== "false";
 
     // 答えの形式
     const answerType = formData.get("answerType");
@@ -233,6 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     coordinateToleranceGroup.style.display = "none";
     document.getElementById("answerType").value = "flag";
+    document.getElementById("published").value = "true";
   });
 
   // 問題一覧から編集ボタンの処理
@@ -240,12 +250,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.classList.contains("edit-btn")) {
       const category = e.target.dataset.category;
       const qid = e.target.dataset.qid;
-      editQuiz(category, qid);
+      if (category && qid) {
+        editQuiz(category, qid);
+      }
     } else if (e.target.classList.contains("delete-btn")) {
       const category = e.target.dataset.category;
       const qid = e.target.dataset.qid;
       if (confirm(`問題 "${category}/${qid}" を削除しますか？`)) {
         deleteQuiz(category, qid);
+      }
+    } else if (e.target.classList.contains("toggle-published-btn")) {
+      const category = e.target.dataset.category;
+      const qid = e.target.dataset.qid;
+      const currentlyPublished = e.target.dataset.published !== "false";
+      const nextPublished = !currentlyPublished;
+      const actionLabel = nextPublished ? "公開" : "非公開";
+      if (confirm(`問題 "${category}/${qid}" を${actionLabel}にしますか？`)) {
+        toggleQuizPublished(category, qid, nextPublished);
       }
     }
   });
@@ -254,7 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // 問題を編集フォームに読み込む
 async function editQuiz(category, qid) {
   try {
-    const res = await fetch("/admin/quizzes");
+    const res = await fetch("/admin/quizzes", { credentials: "include" });
     const data = await res.json();
     
     if (!data[category] || !data[category][qid]) {
@@ -273,6 +294,7 @@ async function editQuiz(category, qid) {
     document.getElementById("point").value = quiz.point || 10;
     document.getElementById("answerType").value = quiz.answerType || "flag";
     document.getElementById("explanation").value = quiz.explanation || "";
+    document.getElementById("published").value = quiz.published === false ? "false" : "true";
     
     // 座標許容範囲
     if (quiz.answerType === "coordinates") {
@@ -309,11 +331,32 @@ async function editQuiz(category, qid) {
       `;
     }
 
-    // フォームまでスクロール
+    switchAdminTab("quiz-edit");
     document.getElementById("addForm").scrollIntoView({ behavior: "smooth" });
   } catch (err) {
     console.error("編集エラー:", err);
     alert("問題の読み込みに失敗しました");
+  }
+}
+
+async function toggleQuizPublished(category, qid, published) {
+  try {
+    const res = await fetch("/admin/quizzes/published", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, qid, published }),
+      credentials: "include"
+    });
+
+    const result = await res.json();
+    alert(result.message);
+
+    if (res.ok) {
+      loadQuizzes();
+    }
+  } catch (err) {
+    console.error("公開設定の更新エラー:", err);
+    alert("サーバーエラーが発生しました。");
   }
 }
 
@@ -340,6 +383,172 @@ async function deleteQuiz(category, qid) {
 }
 
 // 問題一覧を表示（グローバル関数として定義）
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function truncateText(value, max) {
+  const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  if (text.length <= max) return text;
+  return `${text.slice(0, max)}...`;
+}
+
+let allQuizzesData = {};
+
+function initQuizListFilters() {
+  const searchInput = document.getElementById("quizSearchInput");
+  const categoryFilter = document.getElementById("quizFilterCategory");
+  const publishedFilter = document.getElementById("quizFilterPublished");
+  if (searchInput) {
+    searchInput.addEventListener("input", renderQuizList);
+  }
+  if (categoryFilter) {
+    categoryFilter.addEventListener("change", renderQuizList);
+  }
+  if (publishedFilter) {
+    publishedFilter.addEventListener("change", renderQuizList);
+  }
+}
+
+function collectQuizRows(data) {
+  const rows = [];
+  for (const [category, questions] of Object.entries(data || {})) {
+    if (!questions || typeof questions !== "object") continue;
+    for (const [qid, quiz] of Object.entries(questions)) {
+      rows.push({ category, qid, quiz });
+    }
+  }
+  return rows;
+}
+
+function matchesQuizFilters(row) {
+  const searchInput = document.getElementById("quizSearchInput");
+  const categoryFilter = document.getElementById("quizFilterCategory");
+  const publishedFilter = document.getElementById("quizFilterPublished");
+  const keyword = (searchInput?.value || "").trim().toLowerCase();
+  const categoryValue = categoryFilter?.value || "";
+  const publishedValue = publishedFilter?.value || "";
+  const isPublished = row.quiz.published !== false;
+
+  if (categoryValue && row.category !== categoryValue) return false;
+  if (publishedValue === "published" && !isPublished) return false;
+  if (publishedValue === "unpublished" && isPublished) return false;
+  if (!keyword) return true;
+
+  const haystack = [
+    row.category,
+    row.qid,
+    row.quiz.title,
+    row.quiz.desc,
+    row.quiz.answer,
+    row.quiz.categoryId,
+    row.quiz.answerType,
+    Array.isArray(row.quiz.files) ? row.quiz.files.join(" ") : ""
+  ].join(" ").toLowerCase();
+  return haystack.includes(keyword);
+}
+
+function updateQuizCategoryFilter(data) {
+  const categoryFilter = document.getElementById("quizFilterCategory");
+  if (!categoryFilter) return;
+  const selected = categoryFilter.value;
+  const categories = Object.keys(data || {});
+  categoryFilter.innerHTML = `<option value="">すべてのカテゴリ</option>${
+    categories.map((cat) => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join("")
+  }`;
+  if (categories.includes(selected)) {
+    categoryFilter.value = selected;
+  }
+}
+
+function renderQuizList() {
+  const container = document.getElementById("quizList");
+  const countEl = document.getElementById("quizListCount");
+  if (!container) return;
+
+  const allRows = collectQuizRows(allQuizzesData);
+  const rows = allRows.filter(matchesQuizFilters);
+  if (countEl) {
+    countEl.textContent = `${rows.length} / ${allRows.length} 件`;
+  }
+
+  container.innerHTML = "";
+  if (rows.length === 0) {
+    container.innerHTML = `<p class="quiz-empty">一致する問題がありません</p>`;
+    return;
+  }
+
+  const grouped = new Map();
+  for (const row of rows) {
+    if (!grouped.has(row.category)) grouped.set(row.category, []);
+    grouped.get(row.category).push(row);
+  }
+
+  for (const [category, items] of grouped.entries()) {
+    const categoryDiv = document.createElement("div");
+    categoryDiv.className = "category-section";
+
+    const categoryTitle = document.createElement("div");
+    categoryTitle.className = "category-title";
+    categoryTitle.innerHTML = `${escapeHtml(category)}<span class="category-count">${items.length}件</span>`;
+    categoryDiv.appendChild(categoryTitle);
+
+    const wrap = document.createElement("div");
+    wrap.className = "quiz-table-wrap";
+    const table = document.createElement("table");
+    table.className = "quiz-table";
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th class="quiz-col-pub">公開</th>
+          <th class="quiz-col-id">ID</th>
+          <th class="quiz-col-title">タイトル</th>
+          <th class="quiz-col-point">点</th>
+          <th class="quiz-col-type">形式</th>
+          <th class="quiz-col-answer">答え</th>
+          <th class="quiz-col-actions">操作</th>
+        </tr>
+      </thead>
+    `;
+    const tbody = document.createElement("tbody");
+    for (const { qid, quiz } of items) {
+      const isPublished = quiz.published !== false;
+      const publishedLabel = isPublished ? "公開" : "非公開";
+      const toggleLabel = isPublished ? "非公開にする" : "公開する";
+      const answerType = quiz.answerType === "coordinates" ? "座標" : "FLAG";
+      const tr = document.createElement("tr");
+      if (!isPublished) tr.className = "unpublished";
+      tr.innerHTML = `
+        <td><span class="visibility-badge ${isPublished ? "published" : "unpublished"}">${publishedLabel}</span></td>
+        <td>${escapeHtml(qid)}</td>
+        <td class="quiz-col-title" title="${escapeHtml(quiz.title || qid)}">
+          <div class="quiz-title-main">${escapeHtml(quiz.title || qid)}</div>
+          <div class="quiz-title-sub">${escapeHtml(truncateText(quiz.desc || "", 80))}</div>
+        </td>
+        <td>${escapeHtml(quiz.point || 0)}</td>
+        <td>${answerType}</td>
+        <td class="quiz-answer-cell" title="${escapeHtml(quiz.answer || "")}">${escapeHtml(quiz.answer || "")}</td>
+        <td>
+          <div class="quiz-actions">
+            <button type="button" class="toggle-published-btn ${isPublished ? "" : "unpublished"}" data-category="${escapeHtml(category)}" data-qid="${escapeHtml(qid)}" data-published="${isPublished}">${toggleLabel}</button>
+            <button type="button" class="edit-btn" data-category="${escapeHtml(category)}" data-qid="${escapeHtml(qid)}">編集</button>
+            <button type="button" class="delete-btn delete" data-category="${escapeHtml(category)}" data-qid="${escapeHtml(qid)}">削除</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    categoryDiv.appendChild(wrap);
+    container.appendChild(categoryDiv);
+  }
+}
+
 window.loadQuizzes = async function() {
   try {
     const res = await fetch("/admin/quizzes", { credentials: "include" });
@@ -347,46 +556,9 @@ window.loadQuizzes = async function() {
       alert("読み込み失敗");
       return;
     }
-    const data = await res.json();
-    
-    const container = document.getElementById("quizList");
-    container.innerHTML = "";
-
-    for (const [category, questions] of Object.entries(data)) {
-      const categoryDiv = document.createElement("div");
-      categoryDiv.className = "category-section";
-      
-      const categoryTitle = document.createElement("div");
-      categoryTitle.className = "category-title";
-      categoryTitle.textContent = category;
-      categoryDiv.appendChild(categoryTitle);
-
-      for (const [qid, quiz] of Object.entries(questions)) {
-        const quizDiv = document.createElement("div");
-        quizDiv.className = "quiz-item";
-        
-        quizDiv.innerHTML = `
-          <div class="quiz-header">
-            <h3>${quiz.title || qid} (${quiz.point || 0}点)</h3>
-            <div>
-              <button class="edit-btn" data-category="${category}" data-qid="${qid}">編集</button>
-              <button class="delete-btn delete" data-category="${category}" data-qid="${qid}">削除</button>
-            </div>
-          </div>
-          <p><strong>ID:</strong> ${qid}</p>
-          <p><strong>説明:</strong> ${(quiz.desc || "").substring(0, 100)}${(quiz.desc || "").length > 100 ? "..." : ""}</p>
-          <p><strong>答え:</strong> ${quiz.answer || ""}</p>
-          ${quiz.answerType ? `<p><strong>答えの形式:</strong> ${quiz.answerType}</p>` : ""}
-          ${quiz.hint && quiz.hint.length > 0 ? `<p><strong>ヒント数:</strong> ${quiz.hint.length}個</p>` : ""}
-          ${quiz.files && quiz.files.length > 0 ? `<p><strong>ファイル:</strong> ${quiz.files.join(", ")}</p>` : ""}
-          ${quiz.explanation ? `<p><strong>解説:</strong> <a href="${quiz.explanation}" target="_blank">${quiz.explanation}</a></p>` : ""}
-        `;
-        
-        categoryDiv.appendChild(quizDiv);
-      }
-      
-      container.appendChild(categoryDiv);
-    }
+    allQuizzesData = await res.json();
+    updateQuizCategoryFilter(allQuizzesData);
+    renderQuizList();
   } catch (err) {
     console.error("読み込みエラー:", err);
     alert("問題の読み込みに失敗しました");
@@ -621,3 +793,122 @@ window.deleteUser = async function(userid) {
 // ============================================================
 // [一時機能 / TEMP] ここまで
 // ============================================================
+
+const FEEDBACK_STATUSES = [
+  ["open", "未対応"],
+  ["in_progress", "対応中"],
+  ["done", "対応済み"],
+  ["declined", "見送り"],
+];
+
+function formatFeedbackTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value || "";
+  }
+  return date.toLocaleString("ja-JP");
+}
+
+async function loadFeedback() {
+  const list = document.getElementById("feedbackList");
+  const count = document.getElementById("feedbackCount");
+  if (!list) {
+    return;
+  }
+
+  const status = document.getElementById("feedbackStatusFilter")?.value || "";
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  list.textContent = "読み込み中...";
+
+  try {
+    const res = await fetch(`/admin/feedback${query}`, { credentials: "include" });
+    const data = await res.json();
+    if (!res.ok) {
+      list.textContent = data.message || "意見の取得に失敗しました";
+      return;
+    }
+
+    const counts = data.counts || {};
+    if (count) {
+      count.textContent = `未対応 ${counts.open || 0} / 対応中 ${counts.in_progress || 0} / 対応済み ${counts.done || 0} / 見送り ${counts.declined || 0}`;
+    }
+
+    list.replaceChildren();
+    if (!data.items || data.items.length === 0) {
+      list.textContent = "意見はありません。";
+      return;
+    }
+
+    for (const item of data.items) {
+      list.appendChild(renderFeedbackItem(item));
+    }
+  } catch (err) {
+    console.error("意見箱の読み込みエラー:", err);
+    list.textContent = "意見の取得に失敗しました";
+  }
+}
+
+function renderFeedbackItem(item) {
+  const card = document.createElement("article");
+  card.className = "feedback-item";
+
+  const title = document.createElement("h3");
+  title.textContent = item.title;
+
+  const meta = document.createElement("p");
+  meta.className = "feedback-meta";
+  meta.textContent = `${item.categoryLabel} / ${item.username}（${item.userid}） / ${formatFeedbackTime(item.createdAt)}`;
+
+  const body = document.createElement("p");
+  body.className = "feedback-body";
+  body.textContent = item.body;
+
+  const statusLabel = document.createElement("label");
+  statusLabel.textContent = "状態";
+  const statusSelect = document.createElement("select");
+  for (const [value, label] of FEEDBACK_STATUSES) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    option.selected = value === item.status;
+    statusSelect.appendChild(option);
+  }
+
+  const replyLabel = document.createElement("label");
+  replyLabel.textContent = "返信（送信者に表示されます）";
+  const reply = document.createElement("textarea");
+  reply.maxLength = 1000;
+  reply.value = item.adminReply || "";
+
+  const save = document.createElement("button");
+  save.type = "button";
+  save.textContent = "保存";
+  const result = document.createElement("p");
+  result.className = "feedback-result";
+
+  save.addEventListener("click", async () => {
+    result.textContent = "保存中...";
+    try {
+      const res = await fetch(`/admin/feedback/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          status: statusSelect.value,
+          adminReply: reply.value,
+        }),
+      });
+      const data = await res.json();
+      result.textContent = data.message || "更新に失敗しました";
+      if (res.ok) {
+        await loadFeedback();
+      }
+    } catch (err) {
+      console.error("意見箱の更新エラー:", err);
+      result.textContent = "更新に失敗しました";
+    }
+  });
+
+  card.append(title, meta, body, statusLabel, statusSelect, replyLabel, reply, save, result);
+  return card;
+}

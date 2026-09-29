@@ -107,9 +107,28 @@
       </div>
     </div>
 
-    <p>初めての方は<a href="/pre">こちら</a></p>
-    <p>CTF RPGモードは<a href="/game">こちら</a></p>
-    <p>管理者の方は<a href="/admin">こちら</a></p>
+    <nav class="portal-links" aria-label="別のページへ">
+      <a class="portal-card portal-beginner" href="/pre">
+        <span class="portal-kicker">初めての方</span>
+        <span class="portal-title">入門ページ</span>
+        <span class="portal-desc">CTFの始め方と学習の進め方</span>
+      </a>
+      <a class="portal-card portal-rpg" href="/game">
+        <span class="portal-kicker">ゲーム</span>
+        <span class="portal-title">CTF RPGモード</span>
+        <span class="portal-desc">得点でキャラを強化して戦う</span>
+      </a>
+      <a class="portal-card portal-admin" href="/admin">
+        <span class="portal-kicker">管理者の方</span>
+        <span class="portal-title">管理画面</span>
+        <span class="portal-desc">問題・ユーザー・意見の管理</span>
+      </a>
+      <a class="portal-card portal-feedback" href="/feedback">
+        <span class="portal-kicker">ご意見</span>
+        <span class="portal-title">意見箱</span>
+        <span class="portal-desc">改善点や不具合を送る</span>
+      </a>
+    </nav>
     
     <!--タブ選択-->
     <div class="tabs">
@@ -232,6 +251,21 @@
       <p id="result"></p>
       <div id="explanation-link" style="display: none; margin-top: 10px;">
         <a id="explanation-link-anchor" href="#" target="_blank" style="color: #0078ff; text-decoration: underline;">詳しい解説はこちら</a>
+      </div>
+
+      <div id="writeup-section" class="writeup-section" hidden>
+        <h3>Writeup</h3>
+        <p id="writeup-locked" class="writeup-note" hidden>この問題を解くと、writeupを書いたり、他の人のwriteupを読んだりできます。</p>
+        <div id="writeup-editor" hidden>
+          <p class="writeup-note">解き方は任意です。同じ問題を解いた人にだけ表示されます。</p>
+          <textarea id="writeup-body" maxlength="10000" placeholder="解き方を書いてください（任意）"></textarea>
+          <div class="writeup-actions">
+            <button type="button" id="writeup-save">保存</button>
+            <button type="button" id="writeup-delete">削除</button>
+          </div>
+          <p id="writeup-status"></p>
+          <div id="writeup-list"></div>
+        </div>
       </div>
     </div>
   </div>

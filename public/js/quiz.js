@@ -55,25 +55,49 @@ function categoryTabLabelForQuestion(q, storageCategory) {
   return "その他";
 }
 
+function categoryBadgeClass(label) {
+  const map = {
+    Crypto: "crypto",
+    OSINT: "osint",
+    Forensics: "forensics",
+    WEB: "web",
+    "Sad Server": "sad-server"
+  };
+  return map[label] || "other";
+}
+
 function createChallengeTile(storageCategory, qid, q, solvedSet) {
   const div = document.createElement("div");
   div.className = "challenge";
 
+  const key = `${storageCategory}:${qid}`;
+  const isSolved = solvedSet.has(key);
+  div.classList.add(isSolved ? "solved" : "unsolved");
+
+  const header = document.createElement("div");
+  header.className = "challenge-header";
+
+  const categoryLabel = categoryTabLabelForQuestion(q, storageCategory);
+  const badge = document.createElement("span");
+  badge.className = `challenge-badge ${categoryBadgeClass(categoryLabel)}`;
+  badge.textContent = categoryLabel;
+  header.appendChild(badge);
+
+  const status = document.createElement("span");
+  status.className = "challenge-status";
+  status.textContent = isSolved ? "UNLOCKED" : "LOCKED";
+  header.appendChild(status);
+  div.appendChild(header);
+
   const titleDiv = document.createElement("div");
+  titleDiv.className = "challenge-title";
   titleDiv.textContent = q.title;
   div.appendChild(titleDiv);
 
   const pointsDiv = document.createElement("div");
   pointsDiv.className = "points";
-  pointsDiv.textContent = `${q.point}点`;
+  pointsDiv.textContent = `${q.point}pt`;
   div.appendChild(pointsDiv);
-
-  const key = `${storageCategory}:${qid}`;
-  if (solvedSet.has(key)) {
-    div.classList.add("solved");
-  } else {
-    div.classList.add("unsolved");
-  }
 
   div.onclick = (evt) => openModal(storageCategory, qid, evt);
   return div;
@@ -83,16 +107,49 @@ function renderGroupedChallenges(container, groups, solvedSet) {
   container.innerHTML = "";
   for (const group of groups) {
     if (!group.items.length) continue;
+
+    const section = document.createElement("section");
+    section.className = "challenge-section";
+
+    const header = document.createElement("div");
+    header.className = "challenge-section-header";
+
     const h1 = document.createElement("h1");
+    h1.className = "challenge-section-title";
     h1.textContent = group.title;
-    container.appendChild(h1);
+    header.appendChild(h1);
+
+    const solvedCount = group.items.filter(({ storageCategory, qid }) =>
+      solvedSet.has(`${storageCategory}:${qid}`)
+    ).length;
+    const totalCount = group.items.length;
+
+    const progress = document.createElement("div");
+    progress.className = "lock-progress";
+
+    const progressLabel = document.createElement("span");
+    progressLabel.className = "lock-progress-label";
+    progressLabel.textContent = `${solvedCount} / ${totalCount} 解除`;
+    progress.appendChild(progressLabel);
+
+    const track = document.createElement("div");
+    track.className = "lock-progress-track";
+    const fill = document.createElement("div");
+    fill.className = "lock-progress-fill";
+    fill.style.width = `${Math.round((solvedCount / totalCount) * 100)}%`;
+    track.appendChild(fill);
+    progress.appendChild(track);
+    header.appendChild(progress);
+
+    section.appendChild(header);
 
     const grid = document.createElement("div");
     grid.className = "grid";
     for (const { storageCategory, qid, q } of group.items) {
       grid.appendChild(createChallengeTile(storageCategory, qid, q, solvedSet));
     }
-    container.appendChild(grid);
+    section.appendChild(grid);
+    container.appendChild(section);
   }
 }
 
@@ -231,11 +288,8 @@ export async function loadQuizData() {
 function showNextHint(container, skipRecord = false) {
   if (container.currentHintIndex < container.allHints.length) {
     const hintDiv = document.createElement("div");
+    hintDiv.className = "hint-line";
     hintDiv.textContent = `・${container.allHints[container.currentHintIndex]}`;
-    hintDiv.style.marginBottom = "10px";
-    hintDiv.style.padding = "5px";
-    hintDiv.style.backgroundColor = "#4a4a4a";
-    hintDiv.style.borderRadius = "5px";
     container.appendChild(hintDiv);
     container.currentHintIndex++;
     
@@ -280,39 +334,103 @@ function showNextHint(container, skipRecord = false) {
 // 地図関連の変数
 let map = null;
 let marker = null;
+let toleranceCircle = null;
+
+function getCoordinateToleranceDegrees() {
+  const q = quizData[currentCategory]?.[currentQid];
+  const value = Number(q?.coordinateTolerance);
+  return Number.isFinite(value) && value > 0 ? value : 0.001;
+}
+
+function coordinateToleranceMeters(lat) {
+  const toleranceDeg = getCoordinateToleranceDegrees();
+  const latMeters = toleranceDeg * 111320;
+  const lonMeters = toleranceDeg * 111320 * Math.cos((lat * Math.PI) / 180);
+  return Math.max(1, Math.min(latMeters, Math.abs(lonMeters) || latMeters));
+}
+
+function updateToleranceCircle(lat, lng) {
+  if (!map || typeof L === "undefined") return;
+  const radius = coordinateToleranceMeters(lat);
+  if (toleranceCircle) {
+    toleranceCircle.setLatLng([lat, lng]);
+    toleranceCircle.setRadius(radius);
+  } else {
+    toleranceCircle = L.circle([lat, lng], {
+      radius,
+      color: "#22d3ee",
+      weight: 2,
+      fillColor: "#22d3ee",
+      fillOpacity: 0.18,
+      interactive: false
+    }).addTo(map);
+  }
+}
 
 // 地図を初期化
 function initMapForCoordinates() {
   const mapContainer = document.getElementById("map-container");
   const mapDiv = document.getElementById("map");
   
-  // Leafletを使用（Google Maps APIキー不要）
+  // Leaflet + キー不要のタイル（Esri / 国土地理院）
   if (typeof L !== 'undefined') {
-    // 日本中心の地図を表示
     map = L.map(mapDiv).setView([35.6812, 139.7671], 10);
-    
-    // OpenStreetMapタイルを追加
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+
+    const streets = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri',
       maxZoom: 19
-    }).addTo(map);
+    });
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri',
+      maxZoom: 19
+    });
+    const gsi = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', {
+      attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">国土地理院</a>',
+      maxZoom: 18
+    });
+
+    streets.addTo(map);
+    L.control.layers(
+      {
+        "ストリート": streets,
+        "航空写真": satellite,
+        "地理院地図": gsi
+      },
+      null,
+      { collapsed: false }
+    ).addTo(map);
     
     // マーカーを追加
-    marker = L.marker([35.6812, 139.7671], { draggable: true }).addTo(map);
-    
-    // マーカーの位置が変更された時の処理
-    marker.on('dragend', function(e) {
+    const pinIcon = L.divIcon({
+      className: "coord-pin",
+      html: '<span class="coord-pin-inner"></span>',
+      iconSize: [28, 40],
+      iconAnchor: [14, 38]
+    });
+    marker = L.marker([35.6812, 139.7671], { draggable: true, icon: pinIcon }).addTo(map);
+    updateToleranceCircle(35.6812, 139.7671);
+
+    marker.on("drag", function () {
+      const position = marker.getLatLng();
+      updateToleranceCircle(position.lat, position.lng);
+    });
+    marker.on("dragend", function () {
       const position = marker.getLatLng();
       updateCoordinatesInput(position.lat, position.lng);
     });
-    
-    // 地図をクリックした時の処理
-    map.on('click', function(e) {
+
+    map.on("click", function (e) {
       const lat = e.latlng.lat;
       const lng = e.latlng.lng;
       marker.setLatLng([lat, lng]);
       updateCoordinatesInput(lat, lng);
     });
+
+    setTimeout(() => {
+      if (map) {
+        map.invalidateSize();
+      }
+    }, 200);
   } else {
     // Leafletが読み込まれていない場合のフォールバック
     mapDiv.innerHTML = '<p style="padding: 20px; text-align: center;">地図ライブラリを読み込んでいます...</p>';
@@ -375,12 +493,16 @@ function loadLeafletLibrary() {
 }
 
 // 座標入力欄を更新
-function updateCoordinatesInput(lat, lng) {
+function updateCoordinatesInput(lat, lng, options = {}) {
   const answerInput = document.getElementById("answer");
   const selectedCoords = document.getElementById("selected-coords");
   const coordsStr = `${lat.toFixed(6)},${lng.toFixed(6)}`;
-  answerInput.value = coordsStr;
-  selectedCoords.textContent = `選択した座標: ${coordsStr}`;
+  const radiusMeters = Math.round(coordinateToleranceMeters(lat));
+  if (options.updateInput !== false) {
+    answerInput.value = coordsStr;
+  }
+  selectedCoords.textContent = `選択した座標: ${coordsStr}（許容範囲: 約${radiusMeters}m）`;
+  updateToleranceCircle(lat, lng);
 }
 
 // 入力欄から座標を読み取ってマーカーを更新
@@ -400,9 +522,7 @@ function updateMarkerFromInput() {
     if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
       marker.setLatLng([lat, lng]);
       map.setView([lat, lng], Math.max(10, map.getZoom()));
-      
-      const selectedCoords = document.getElementById("selected-coords");
-      selectedCoords.textContent = `選択した座標: ${lat.toFixed(6)},${lng.toFixed(6)}`;
+      updateCoordinatesInput(lat, lng, { updateInput: false });
     }
   }
 }
@@ -416,6 +536,10 @@ function openModal(category, qid, evt = null) {
 
   const modal = document.getElementById("modal");
   const modalContent = modal.querySelector(".modal-content");
+  const isSolved = solvedList.some((s) => s.category === category && s.qid === qid);
+  modalContent.classList.toggle("solved", isSolved);
+  modalContent.classList.toggle("unsolved", !isSolved);
+  modalContent.style.borderColor = "";
 
   document.getElementById("modal-title").textContent = q.title;
 
@@ -602,12 +726,6 @@ function openModal(category, qid, evt = null) {
   }
 
 
-  modalContent.style.backgroundColor = "#5b5b5bff";
-  modalContent.style.color = "white";
-  modalContent.style.borderWidth = "2px";
-  modalContent.style.borderStyle = "solid";
-  modalContent.style.borderColor = "rgb(242 242 242 / 30%)";
-
   // 解説リンクの表示（正解前でも表示）
   const explanationLink = document.getElementById("explanation-link");
   if (q.explanation) {
@@ -624,6 +742,8 @@ function openModal(category, qid, evt = null) {
     resultFeedback.textContent = "";
     resultFeedback.className = "";
   }
+
+  showWriteupSection(category, qid, isSolved);
 
   // 座標入力用の地図の表示/非表示
   const mapContainer = document.getElementById("map-container");
@@ -651,6 +771,7 @@ function openModal(category, qid, evt = null) {
         }
         map = null;
         marker = null;
+        toleranceCircle = null;
       }
       
       // 地図コンテナをクリア
@@ -740,6 +861,12 @@ async function checkOpenModalAchievement() {
 }
 
 export function closeModal() {
+  rememberWriteupDraft();
+  const answerInput = document.getElementById("answer");
+  if (answerInput) answerInput.value = "";
+  const selectedCoords = document.getElementById("selected-coords");
+  if (selectedCoords) selectedCoords.textContent = "";
+
   // スクロール位置を保存
   const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
   
@@ -825,6 +952,8 @@ document.getElementById("submitBtn").addEventListener("click", async (e) => {
 
   // 答えをそのまま送信（HTTP環境対応のためハッシュ化を削除）
   const answerToSend = answer.trim();
+  const hintsContainer = document.getElementById("modal-hints");
+  const usedHint = !!(hintsContainer && hintsContainer.currentHintIndex > 0);
 
   const res = await fetch("/quiz/checkAnswer", {
     method: "POST",
@@ -834,7 +963,8 @@ document.getElementById("submitBtn").addEventListener("click", async (e) => {
       qid: currentQid,
       answer: answerToSend,
       answerType: answerType,
-      point: currentPoint
+      point: currentPoint,
+      usedHint
     }),
     credentials: "include"
   });
@@ -855,7 +985,10 @@ console.log("📡 /checkAnswer応答:", res.status);
     resultEl.className = "success result-correct-bounce";
     resultEl.textContent = `〇 ${msg}`;
     solvedList.push({ category: currentCategory, qid: currentQid });
-    modalContent.style.borderColor = "#6cd463";
+    modalContent.classList.remove("unsolved");
+    modalContent.classList.add("solved");
+    modalContent.style.borderColor = "";
+    showWriteupSection(currentCategory, currentQid, true);
     
     // 解説がある場合はリンクを表示
     const q = quizData[currentCategory][currentQid];
@@ -874,6 +1007,316 @@ console.log("📡 /checkAnswer応答:", res.status);
     // 不正解でも「挑戦」系の実績が解除される場合があるためチェック
     notifyRecentlyUnlockedAchievements();
   }
+});
+
+const WRITEUP_MAX = 10000;
+const REPLY_MAX = 1000;
+const writeupDrafts = new Map();
+
+function writeupDraftKey(category, qid) {
+  return `${category}:${qid}`;
+}
+
+function rememberWriteupDraft() {
+  const editor = document.getElementById("writeup-editor");
+  const body = document.getElementById("writeup-body");
+  if (!editor || editor.hidden || !body || !currentCategory || !currentQid) return;
+  writeupDrafts.set(writeupDraftKey(currentCategory, currentQid), body.value);
+}
+
+function forgetWriteupDraft(category, qid) {
+  writeupDrafts.delete(writeupDraftKey(category, qid));
+}
+
+function applyWriteupDraft(category, qid) {
+  const key = writeupDraftKey(category, qid);
+  if (!writeupDrafts.has(key)) return;
+  const body = document.getElementById("writeup-body");
+  if (body) body.value = writeupDrafts.get(key);
+}
+
+function setWriteupStatus(message, kind) {
+  const status = document.getElementById("writeup-status");
+  if (!status) return;
+  status.textContent = message || "";
+  status.className = kind || "";
+}
+
+function renderWriteupList(items) {
+  const list = document.getElementById("writeup-list");
+  list.textContent = "";
+  if (!items || items.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "writeup-empty";
+    empty.textContent = "まだwriteupはありません。";
+    list.appendChild(empty);
+    return;
+  }
+
+  items.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = item.mine ? "writeup-card mine" : "writeup-card";
+
+    const meta = document.createElement("div");
+    meta.className = "writeup-meta";
+    const author = document.createElement("span");
+    author.textContent = item.mine ? `${item.username}（自分）` : item.username;
+    const time = document.createElement("time");
+    const updated = item.updatedAt ? new Date(item.updatedAt) : null;
+    time.textContent = updated && !Number.isNaN(updated.getTime())
+      ? updated.toLocaleString("ja-JP")
+      : "";
+    meta.appendChild(author);
+    meta.appendChild(time);
+
+    const body = document.createElement("p");
+    body.className = "writeup-body";
+    body.textContent = item.body;
+
+    const votes = document.createElement("div");
+    votes.className = "writeup-votes";
+    votes.appendChild(createVoteButton(item, "good", `Good ${item.goodCount || 0}`));
+    votes.appendChild(createVoteButton(item, "bad", `Bad ${item.badCount || 0}`));
+
+    const replies = document.createElement("div");
+    replies.className = "writeup-replies";
+    (item.replies || []).forEach((reply) => {
+      replies.appendChild(createReplyCard(reply));
+    });
+
+    const replyForm = document.createElement("form");
+    replyForm.className = "writeup-reply-form";
+    const replyInput = document.createElement("textarea");
+    replyInput.className = "writeup-reply-input";
+    replyInput.maxLength = REPLY_MAX;
+    replyInput.rows = 2;
+    replyInput.placeholder = "返信を書く";
+    const replyButton = document.createElement("button");
+    replyButton.type = "submit";
+    replyButton.className = "writeup-reply-send";
+    replyButton.textContent = "返信";
+    replyForm.appendChild(replyInput);
+    replyForm.appendChild(replyButton);
+    replyForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      submitWriteupReply(item.authorId, replyInput.value);
+    });
+
+    card.appendChild(meta);
+    card.appendChild(body);
+    card.appendChild(votes);
+    card.appendChild(replies);
+    card.appendChild(replyForm);
+    list.appendChild(card);
+  });
+}
+
+function createVoteButton(item, vote, label) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `writeup-vote ${vote}${item.myVote === vote ? " is-selected" : ""}`;
+  button.textContent = label;
+  button.disabled = !!item.mine;
+  if (!item.mine) {
+    button.addEventListener("click", () => voteWriteup(item.authorId, vote));
+  }
+  return button;
+}
+
+function createReplyCard(reply) {
+  const card = document.createElement("div");
+  card.className = "writeup-reply";
+
+  const meta = document.createElement("div");
+  meta.className = "writeup-reply-meta";
+  const author = document.createElement("span");
+  author.textContent = reply.mine ? `${reply.username}（自分）` : reply.username;
+  const time = document.createElement("time");
+  const created = reply.createdAt ? new Date(reply.createdAt) : null;
+  time.textContent = created && !Number.isNaN(created.getTime())
+    ? created.toLocaleString("ja-JP")
+    : "";
+  meta.appendChild(author);
+  meta.appendChild(time);
+
+  const body = document.createElement("p");
+  body.className = "writeup-reply-body";
+  body.textContent = reply.body;
+
+  card.appendChild(meta);
+  card.appendChild(body);
+  if (reply.mine) {
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "writeup-reply-delete";
+    remove.textContent = "削除";
+    remove.addEventListener("click", () => deleteWriteupReply(reply.id));
+    card.appendChild(remove);
+  }
+  return card;
+}
+
+async function voteWriteup(authorId, vote) {
+  if (!currentCategory || !currentQid || !authorId) return;
+  const res = await fetch("/quiz/writeups/vote", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      category: currentCategory,
+      qid: currentQid,
+      authorId,
+      vote,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    setWriteupStatus(data.message || "評価に失敗しました", "error");
+    return;
+  }
+  setWriteupStatus(data.message || "評価しました", "success");
+  loadWriteups(currentCategory, currentQid);
+}
+
+async function submitWriteupReply(authorId, rawBody) {
+  if (!currentCategory || !currentQid || !authorId) return;
+  const body = rawBody.trim();
+  if (!body) {
+    setWriteupStatus("返信を入力してください", "error");
+    return;
+  }
+  if (body.length > REPLY_MAX) {
+    setWriteupStatus(`返信は${REPLY_MAX}文字までです`, "error");
+    return;
+  }
+  const res = await fetch("/quiz/writeups/replies", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      category: currentCategory,
+      qid: currentQid,
+      authorId,
+      body,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    setWriteupStatus(data.message || "返信に失敗しました", "error");
+    return;
+  }
+  setWriteupStatus(data.message || "返信しました", "success");
+  loadWriteups(currentCategory, currentQid);
+}
+
+async function deleteWriteupReply(id) {
+  if (!currentCategory || !currentQid || !id) return;
+  const res = await fetch("/quiz/writeups/replies", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ id }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    setWriteupStatus(data.message || "返信の削除に失敗しました", "error");
+    return;
+  }
+  setWriteupStatus(data.message || "返信を削除しました", "success");
+  loadWriteups(currentCategory, currentQid);
+}
+
+function showWriteupSection(category, qid, solved) {
+  const section = document.getElementById("writeup-section");
+  const locked = document.getElementById("writeup-locked");
+  const editor = document.getElementById("writeup-editor");
+  const body = document.getElementById("writeup-body");
+  const list = document.getElementById("writeup-list");
+  if (!section || !locked || !editor || !body || !list) return;
+
+  section.hidden = false;
+  setWriteupStatus("", "");
+  body.value = "";
+  list.textContent = "";
+
+  if (!solved) {
+    locked.hidden = false;
+    editor.hidden = true;
+    return;
+  }
+
+  locked.hidden = true;
+  editor.hidden = false;
+  loadWriteups(category, qid);
+}
+
+async function loadWriteups(category, qid) {
+  const params = new URLSearchParams({ category, qid });
+  const res = await fetch(`/quiz/writeups?${params}`, { credentials: "include" });
+  const data = await res.json().catch(() => ({}));
+  if (currentCategory !== category || currentQid !== qid) return;
+  if (!res.ok) {
+    applyWriteupDraft(category, qid);
+    setWriteupStatus(data.message || "writeupの取得に失敗しました", "error");
+    return;
+  }
+  document.getElementById("writeup-body").value = data.mine ? data.mine.body : "";
+  applyWriteupDraft(category, qid);
+  renderWriteupList(data.items || []);
+}
+
+document.getElementById("writeup-save").addEventListener("click", async () => {
+  if (!currentCategory || !currentQid) return;
+  const body = document.getElementById("writeup-body").value.trim();
+  if (!body) {
+    setWriteupStatus("writeupを入力してください", "error");
+    return;
+  }
+  if (body.length > WRITEUP_MAX) {
+    setWriteupStatus(`writeupは${WRITEUP_MAX}文字までです`, "error");
+    return;
+  }
+
+  const res = await fetch("/quiz/writeups", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ category: currentCategory, qid: currentQid, body }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    setWriteupStatus(data.message || "writeupの保存に失敗しました", "error");
+    return;
+  }
+  forgetWriteupDraft(currentCategory, currentQid);
+  setWriteupStatus(data.message || "writeupを保存しました", "success");
+  loadWriteups(currentCategory, currentQid);
+});
+
+document.getElementById("writeup-delete").addEventListener("click", async () => {
+  if (!currentCategory || !currentQid) return;
+  const body = document.getElementById("writeup-body").value.trim();
+  if (!body) {
+    setWriteupStatus("削除するwriteupがありません", "error");
+    return;
+  }
+  if (!window.confirm("自分のwriteupを削除しますか？")) return;
+
+  const res = await fetch("/quiz/writeups", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ category: currentCategory, qid: currentQid }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    setWriteupStatus(data.message || "writeupの削除に失敗しました", "error");
+    return;
+  }
+  forgetWriteupDraft(currentCategory, currentQid);
+  document.getElementById("writeup-body").value = "";
+  setWriteupStatus(data.message || "writeupを削除しました", "success");
+  loadWriteups(currentCategory, currentQid);
 });
 
 // 直近で解除された実績を取得して通知を表示する（サーバー処理を待つため少し遅延）

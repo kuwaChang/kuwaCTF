@@ -395,7 +395,12 @@ async function checkAchievements(userid, eventType, eventData) {
             try {
               // solvedテーブルにused_hintカラムがある場合
               const noHintRows = await dbAll(
-                "SELECT COUNT(*) as count FROM solved WHERE userid = ? AND (used_hint = 0 OR used_hint IS NULL)",
+                `SELECT COUNT(*) as count FROM solved s
+                 WHERE s.userid = ? AND (s.used_hint = 0 OR s.used_hint IS NULL)
+                 AND NOT EXISTS (
+                   SELECT 1 FROM hint_opened h
+                   WHERE h.userid = s.userid AND h.category = s.category AND h.qid = s.qid
+                 )`,
                 [userid]
               );
               
@@ -640,7 +645,12 @@ router.get("/list", requireLogin, async (req, res) => {
           // ヒントを使わずに解いた問題数の計算
           try {
             const noHintRows = await dbAll(
-              "SELECT COUNT(*) as count FROM solved WHERE userid = ? AND (used_hint = 0 OR used_hint IS NULL)",
+              `SELECT COUNT(*) as count FROM solved s
+               WHERE s.userid = ? AND (s.used_hint = 0 OR s.used_hint IS NULL)
+               AND NOT EXISTS (
+                 SELECT 1 FROM hint_opened h
+                 WHERE h.userid = s.userid AND h.category = s.category AND h.qid = s.qid
+               )`,
               [userid]
             );
             
