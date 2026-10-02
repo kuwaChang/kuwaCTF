@@ -521,7 +521,177 @@ router.put("/users/:userid/profile", requireAdmin, async (req, res) => {
 // [一時機能 / TEMP] 指定ユーザーをDBから削除する機能（今後削除予定）
 // このブロックをまるごと消せば機能を撤去できます。
 // ============================================================
-router.delete("/users/:userid", requireAdmin, (req, res) => {
+function dbGet(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+}
+
+function dbAll(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows || []);
+    });
+  });
+}
+
+// ユーザーに紐づく行。外部キーがないため、削除時にここへ足す。
+function userDataDeleteStatements(userid) {
+  return [
+    { table: "solved", sql: "DELETE FROM solved WHERE userid = ?", params: [userid] },
+    { table: "study_sessions", sql: "DELETE FROM study_sessions WHERE userid = ?", params: [userid] },
+    { table: "study_time", sql: "DELETE FROM study_time WHERE userid = ?", params: [userid] },
+    { table: "user_achievements", sql: "DELETE FROM user_achievements WHERE userid = ?", params: [userid] },
+    { table: "user_decorations", sql: "DELETE FROM user_decorations WHERE userid = ?", params: [userid] },
+    { table: "login_logs", sql: "DELETE FROM login_logs WHERE userid = ?", params: [userid] },
+    { table: "hint_opened", sql: "DELETE FROM hint_opened WHERE userid = ?", params: [userid] },
+    { table: "answer_attempts", sql: "DELETE FROM answer_attempts WHERE userid = ?", params: [userid] },
+    { table: "writeups", sql: "DELETE FROM writeups WHERE userid = ?", params: [userid] },
+    {
+      table: "writeup_votes",
+      sql: "DELETE FROM writeup_votes WHERE writeup_userid = ? OR voter_userid = ?",
+      params: [userid, userid]
+    },
+    {
+      table: "writeup_replies",
+      sql: "DELETE FROM writeup_replies WHERE writeup_userid = ? OR userid = ?",
+      params: [userid, userid]
+    },
+    { table: "feedback", sql: "DELETE FROM feedback WHERE userid = ?", params: [userid] },
+    { table: "users", sql: "DELETE FROM users WHERE userid = ?", params: [userid] }
+  ];
+}
+
+function deleteUserRecords(userid) {
+  return dbAll("SELECT name FROM sqlite_master WHERE type = 'table'").then((rows) => {
+    const existing = new Set(rows.map((row) => row.name));
+    const statements = userDataDeleteStatements(userid).filter((stmt) => existing.has(stmt.table));
+    if (!statements.some((stmt) => stmt.table === "users")) {
+      return Promise.reject(new Error("usersテーブルがありません"));
+    }
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const rejectOnce = (err) => {
+        if (settled) return;
+        settled = true;
+        reject(err);
+      };
+
+      db.serialize(() => {
+        db.run("BEGIN IMMEDIATE", (beginErr) => {
+          if (beginErr) return rejectOnce(beginErr);
+
+          let pending = statements.length;
+          let failed = null;
+          const finish = function (stmtErr) {
+            if (stmtErr && !failed) failed = stmtErr;
+            pending -= 1;
+            if (pending > 0) return;
+
+            const nextSql = failed ? "ROLLBACK" : "COMMIT";
+            db.run(nextSql, (endErr) => {
+              if (failed || endErr) rejectOnce(failed || endErr);
+              else if (!settled) {
+                settled = true;
+                resolve();
+              }
+            });
+          };
+
+          for (const stmt of statements) {
+            db.run(stmt.sql, stmt.params, function (stmtErr) {
+              if (stmt.table === "users" && !stmtErr && this.changes === 0 && !failed) {
+                failed = Object.assign(new Error("ユーザーが見つかりません"), { code: "NOT_FOUND" });
+              }
+              finish(stmtErr);
+            });
+          }
+        });
+      });
+    });
+  });
+}
+
+function removeUserIcons(userid, iconPath) {
+  const iconsDir = path.join(paths.PUBLIC, "icons");
+  const targets = new Set();
+
+  if (typeof iconPath === "string" && iconPath.startsWith("/icons/")) {
+    const filename = path.basename(iconPath);
+    if (filename && filename !== "." && filename !== "..") {
+      targets.add(path.join(iconsDir, filename));
+    }
+  }
+
+  if (fs.existsSync(iconsDir)) {
+    const prefix = `${userid}_`;
+    for (const name of fs.readdirSync(iconsDir)) {
+      if (name.startsWith(prefix)) {
+        targets.add(path.join(iconsDir, name));
+      }
+    }
+  }
+
+  for (const filePath of targets) {
+    try {
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (err) {
+      console.error("アイコン削除エラー:", err);
+    }
+  }
+}
+
+function purgeUserSessions(userid) {
+  return new Promise((resolve) => {
+    const sessionsDbPath = path.join(paths.STORAGE, "sessions.sqlite");
+    if (!fs.existsSync(sessionsDbPath)) return resolve();
+
+    const sqlite3 = require("sqlite3");
+    const sessionsDb = new sqlite3.Database(sessionsDbPath);
+    sessionsDb.configure("busyTimeout", 5000);
+    sessionsDb.all("SELECT sid, sess FROM sessions", [], (err, rows) => {
+      if (err) {
+        console.error("セッション取得エラー:", err);
+        sessionsDb.close();
+        return resolve();
+      }
+
+      const sids = [];
+      for (const row of rows || []) {
+        let sess = row.sess;
+        if (typeof sess === "string") {
+          try {
+            sess = JSON.parse(sess);
+          } catch {
+            continue;
+          }
+        }
+        if (sess && sess.userid === userid) sids.push(row.sid);
+      }
+
+      if (sids.length === 0) {
+        sessionsDb.close();
+        return resolve();
+      }
+
+      const placeholders = sids.map(() => "?").join(", ");
+      sessionsDb.run(`DELETE FROM sessions WHERE sid IN (${placeholders})`, sids, (delErr) => {
+        if (delErr) console.error("セッション削除エラー:", delErr);
+        sessionsDb.close();
+        resolve();
+      });
+    });
+  });
+}
+
+router.delete("/users/:userid", requireAdmin, async (req, res) => {
   let { userid } = req.params;
 
   // セキュリティ: 入力値のサニタイゼーションとバリデーション
@@ -535,39 +705,36 @@ router.delete("/users/:userid", requireAdmin, (req, res) => {
     return res.status(400).json({ message: "自分自身のアカウントは削除できません" });
   }
 
-  // 対象ユーザーの存在確認 → 関連データも含めてトランザクションで削除
-  db.serialize(() => {
-    db.get("SELECT userid FROM users WHERE userid = ?", [userid], (err, row) => {
-      if (err) {
-        console.error("ユーザー削除（存在確認）エラー:", err);
-        return res.status(500).json({ message: "ユーザーの削除に失敗しました" });
-      }
-      if (!row) {
-        return res.status(404).json({ message: "ユーザーが見つかりません" });
-      }
+  try {
+    const row = await dbGet("SELECT userid, icon_path FROM users WHERE userid = ?", [userid]);
+    if (!row) {
+      return res.status(404).json({ message: "ユーザーが見つかりません" });
+    }
 
-      db.run("BEGIN TRANSACTION");
-      // 関連テーブルのデータも削除（外部キー制約がないため手動で掃除）
-      db.run("DELETE FROM solved WHERE userid = ?", [userid]);
-      db.run("DELETE FROM study_sessions WHERE userid = ?", [userid]);
-      db.run("DELETE FROM user_achievements WHERE userid = ?", [userid]);
-      db.run("DELETE FROM user_decorations WHERE userid = ?", [userid]);
-      db.run("DELETE FROM users WHERE userid = ?", [userid], function (delErr) {
-        if (delErr) {
-          console.error("ユーザー削除エラー:", delErr);
-          db.run("ROLLBACK");
-          return res.status(500).json({ message: "ユーザーの削除に失敗しました" });
-        }
-        db.run("COMMIT", (commitErr) => {
-          if (commitErr) {
-            console.error("ユーザー削除（コミット）エラー:", commitErr);
-            return res.status(500).json({ message: "ユーザーの削除に失敗しました" });
-          }
-          res.json({ message: `ユーザー ${userid} を削除しました` });
-        });
-      });
-    });
-  });
+    await deleteUserRecords(userid);
+
+    removeUserIcons(userid, row.icon_path);
+    await purgeUserSessions(userid);
+
+    try {
+      require("../services/tutorService").clearHistory(userid);
+    } catch (err) {
+      console.error("チューター会話履歴の削除エラー:", err);
+    }
+    try {
+      require("../services/tutorQaLog").removeByUserid(userid);
+    } catch (err) {
+      console.error("チューター質問ログの削除エラー:", err);
+    }
+
+    res.json({ message: `ユーザー ${userid} と関連データを削除しました` });
+  } catch (err) {
+    if (err && err.code === "NOT_FOUND") {
+      return res.status(404).json({ message: "ユーザーが見つかりません" });
+    }
+    console.error("ユーザー削除エラー:", err);
+    res.status(500).json({ message: "ユーザーの削除に失敗しました" });
+  }
 });
 // ============================================================
 // [一時機能 / TEMP] ここまで

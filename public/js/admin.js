@@ -767,7 +767,7 @@ window.updateUserRole = async function(userid) {
 // このブロックをまるごと消せば機能を撤去できます。
 // ============================================================
 window.deleteUser = async function(userid) {
-  if (!confirm(`ユーザー ${userid} をデータベースから完全に削除します。\nこの操作は取り消せません。よろしいですか？`)) {
+  if (!confirm(`ユーザー ${userid} と、そのユーザーに関するデータ（解答、実績、writeup、フィードバック、アイコン、ログインセッションなど）をすべて削除します。\nこの操作は取り消せません。よろしいですか？`)) {
     return;
   }
 

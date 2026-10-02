@@ -93,7 +93,8 @@
         <h2>✨ 新規登録</h2>
         <label>ユーザー名: <input type="text" name="username" required></label>
         <label>ユーザーID: <input type="text" name="userid" required></label>
-        <label>パスワード: <input type="password" name="password" required></label>
+        <label>パスワード: <input type="password" name="password" autocomplete="new-password" required minlength="8" placeholder="8文字以上"></label>
+        <label>パスワード（確認）: <input type="password" name="confirmPassword" autocomplete="new-password" required minlength="8" placeholder="もう一度入力"></label>
         <button type="submit">登録</button>
       </form>   
       <p id="registerMessage"></p>
@@ -107,10 +108,21 @@
     // 新規登録処理
     document.getElementById("registerForm").addEventListener("submit", async (e) => {
         e.preventDefault();
+        const password = e.target.password.value;
+        const confirmPassword = e.target.confirmPassword.value;
+        const messageEl = document.getElementById("registerMessage");
+
+        if (password !== confirmPassword) {
+          messageEl.innerText = "パスワードが一致しません";
+          messageEl.className = "error";
+          return;
+        }
+
         const data = {
         username: e.target.username.value,
         userid: e.target.userid.value,
-        password: e.target.password.value
+        password,
+        confirmPassword
         };
 
         const res = await fetch("/auth/register", {
@@ -120,7 +132,6 @@
         });
 
         const result = await res.json();
-        const messageEl = document.getElementById("registerMessage");
         messageEl.innerText = result.message;
         
         if (result.success) {

@@ -62,4 +62,64 @@ function flushPendingToDocs() {
   }
 }
 
-module.exports = { append, flushPendingToDocs };
+/**
+ * 指定ユーザーの質問ログを未書き出し分と docs の書き出し済みファイルから除く。
+ */
+function removeByUserid(userid) {
+  let pendingRemoved = 0;
+  let docsUpdated = 0;
+
+  if (fs.existsSync(PENDING_PATH)) {
+    const raw = fs.readFileSync(PENDING_PATH, "utf8");
+    const kept = [];
+    for (const line of raw.split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const entry = JSON.parse(line);
+        if (entry.userid === userid) {
+          pendingRemoved += 1;
+          continue;
+        }
+      } catch {
+        // 壊れた行は残す
+      }
+      kept.push(line);
+    }
+    if (pendingRemoved > 0) {
+      if (kept.length === 0) {
+        fs.unlinkSync(PENDING_PATH);
+      } else {
+        fs.writeFileSync(PENDING_PATH, kept.join("\n") + "\n", "utf8");
+      }
+    }
+  }
+
+  if (fs.existsSync(DOCS_DIR)) {
+    for (const name of fs.readdirSync(DOCS_DIR)) {
+      if (!/^tutor-qa-.+\.json$/.test(name)) continue;
+      const filePath = path.join(DOCS_DIR, name);
+      let payload;
+      try {
+        payload = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      } catch (e) {
+        console.error("❌ tutor Q&A ファイルの読み込みエラー:", filePath, e.message);
+        continue;
+      }
+      if (!payload || !Array.isArray(payload.entries)) continue;
+      const before = payload.entries.length;
+      payload.entries = payload.entries.filter((entry) => entry.userid !== userid);
+      if (payload.entries.length === before) continue;
+      docsUpdated += 1;
+      if (payload.entries.length === 0) {
+        fs.unlinkSync(filePath);
+      } else {
+        payload.entryCount = payload.entries.length;
+        fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
+      }
+    }
+  }
+
+  return { pendingRemoved, docsUpdated };
+}
+
+module.exports = { append, flushPendingToDocs, removeByUserid };

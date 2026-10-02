@@ -37,7 +37,7 @@ function validatePassword(password) {
 
 // 登録
 router.post("/register", async (req, res) => {
-  let { userid, username, password } = req.body;
+  let { userid, username, password, confirmPassword } = req.body;
   
   // セキュリティ: 入力値のサニタイゼーション
   userid = sanitizeInput(userid, 20);
@@ -54,6 +54,10 @@ router.post("/register", async (req, res) => {
   
   if (!validatePassword(password)) {
     return res.status(400).json({ success: false, message: "パスワードは8文字以上で入力してください" });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({ success: false, message: "パスワードが一致しません" });
   }
   
   // セキュリティ: パスワードのハッシュ化
