@@ -40,9 +40,9 @@ const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(64).toSt
 
 // セキュリティ: レート制限（ブルートフォース対策）
 const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15分
-const RATE_LIMIT_MAX_REQUESTS = 100; // 15分間に100リクエストまで
-const LOGIN_RATE_LIMIT_MAX = 10; // ログイン試行は15分間に10回まで
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1分
+const RATE_LIMIT_MAX_REQUESTS = 1000; // 1分間に1000リクエストまで
+const LOGIN_RATE_LIMIT_MAX = 10; // ログイン試行は1分間に10回まで
 
 // レート制限(ブルートフォース対策)
 function rateLimit(req, res, next) {
