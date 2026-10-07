@@ -219,12 +219,12 @@
       ]
     },
     "medium5": {
-      "answer": "FLAG{medium5}",
+      "answer": "FLAG{20030503}",
       "title": "回廊「大図書館」",
       "categoryId": "osint",
-      "desc": "### 膨大な本棚のデータが並ぶ回廊。しかし、奥の扉は「OFFLINE」と表示されている。\n- **メンター:** \n「アトラスの『大図書館』だ。だが、メインデータは消去されている…。」\n- **メンター:** \n「扉の認証システムは『消去直前にサイト（図書館の入り口）に掲載されていた特定の年代の言葉』を要求している。サイトはもう存在しない。」\n- **メンター:** \n「だが、ネットワークの“残響”がどこかに残っているはずだ。過去のサイトにアクセスし、『指定されている言葉』を見つけてくれ。」\nURL: yllibyar.tripod.com\n※この問題では、2004/04/29において\nI have been unable to edit my NEW Link(s) above:と記録されている年月日を答えてください",
+      "desc": "膨大な本棚のデータが並ぶ回廊。\nしかし、奥の扉は「OFFLINE」と表示されている。\n\n- **メンター:** \n「アトラスの『大図書館』だ。だが、メインデータは消去されている…。」\n\n- **メンター:** \n「扉の認証システムは『消去直前にサイト（図書館の入り口）に掲載されていた特定の年代の言葉』を要求している。サイトはもう存在しない。」\n\n- **メンター:** \n「だが、ネットワークの“残響”がどこかに残っているはずだ。過去のサイトにアクセスし、『指定されている言葉』を見つけてくれ。」\n\nURL: yllibyar.tripod.com\n\n※この問題では、2004/04/29において\n\"I have been unable to edit my NEW Link(s) above:\"と記録されている年月日を答えてください\n\n例: FLAG{20040429}",
       "hint": [
-        "hint"
+        "過去の履歴を見れるサイトを利用しよう!"
       ],
       "point": 30
     }
@@ -913,7 +913,8 @@
       ],
       "point": 50,
       "files": [],
-      "answerType": "flag"
+      "answerType": "flag",
+      "published": false
     },
     "osint2": {
       "answer": "35.6812,139.7671",
@@ -928,7 +929,8 @@
       "point": 60,
       "files": [],
       "answerType": "coordinates",
-      "coordinateTolerance": 0.001
+      "coordinateTolerance": 0.001,
+      "published": false
     }
   },
   "sad server": {
@@ -944,7 +946,8 @@
       ],
       "point": 10,
       "files": [],
-      "scenarioId": "easy1"
+      "scenarioId": "easy1",
+      "published": false
     },
     "easy2": {
       "answer": "FLAG{easy_flag_2}",
@@ -959,7 +962,8 @@
       ],
       "point": 15,
       "files": [],
-      "scenarioId": "easy2"
+      "scenarioId": "easy2",
+      "published": false
     },
     "medium1": {
       "answer": "FLAG{medium_flag}",
@@ -974,7 +978,8 @@
       ],
       "point": 20,
       "files": [],
-      "scenarioId": "medium"
+      "scenarioId": "medium",
+      "published": false
     },
     "hard1": {
       "answer": "FLAG{hard_flag}",
@@ -993,7 +998,8 @@
       ],
       "point": 30,
       "files": [],
-      "scenarioId": "hard"
+      "scenarioId": "hard",
+      "published": false
     },
     "test1": {
       "answer": "FLAG{test1}",
@@ -1005,7 +1011,8 @@
       ],
       "point": 30,
       "files": [],
-      "scenarioId": "test1"
+      "scenarioId": "test1",
+      "published": false
     }
   }
 }
