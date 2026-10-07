@@ -1448,7 +1448,7 @@ Quantum socks screams at upside-down ladders during eclipse.
 Invisible jelly melts a silent trumpet during eclipse.
 The banana forgets parallel potatoes with elegance.
 Quantum socks forgets upside-down ladders in reverse.
-Dancing flag{!grep!}pillows melts a silent trumpet underwater.
+Dancing FLAG{!grep!}pillows melts a silent trumpet underwater.
 A plastic elephant forgets parallel potatoes with elegance.
 Quantum socks forgets a silent trumpet during eclipse.
 The banana forgets a silent trumpet during eclipse.
