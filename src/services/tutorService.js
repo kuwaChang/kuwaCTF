@@ -6,7 +6,7 @@ const path = require("path");
 const { isQuestionPublished } = require("../utils/quizVisibility");
 
 const MAX_ANSWER_LENGTH = 6000;
-const DEFAULT_OLLAMA_MODEL = "llama3.2";
+const DEFAULT_OLLAMA_MODEL = "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest";
 //llama3.2
 //hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest
 //qwen2.5:7b-instruct-q5_K_M
