@@ -1,7 +1,0 @@
-charts: []
-drawings: []
-images: []
-sheet='質問シート' formulas=0 sample=[] charts=0 images=0
-sheet='評価データ' formulas=1373 sample=[('A2', '=INT((ROW()-2)/6)+1'), ('C2', '=INT(MOD(ROW()-2,6)/2)+1'), ('A3', '=INT((ROW()-2)/6)+1')] charts=0 images=0
-sheet='モデル比較' formulas=0 sample=[] charts=0 images=0
-sheet='一致度分析' formulas=0 sample=[] charts=0 images=0
