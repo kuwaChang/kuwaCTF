@@ -12,6 +12,15 @@ function requireLogin(req, res, next) {
   next();
 }
 
+/** クライアント切断時に、生成待ち・生成中の枠を解放する */
+function bindClientAbort(res) {
+  const abortController = new AbortController();
+  res.on("close", () => {
+    if (!res.writableFinished) abortController.abort();
+  });
+  return abortController;
+}
+
 // 知識ベースの初期化（初回のみ）
 let knowledgeBaseInitialized = false;
 async function ensureKnowledgeBase() {
@@ -28,6 +37,7 @@ async function ensureKnowledgeBase() {
 
 // 質問に答える
 router.post("/ask", requireLogin, async (req, res) => {
+  const abortController = bindClientAbort(res);
   try {
     await ensureKnowledgeBase();
 
@@ -42,9 +52,11 @@ router.post("/ask", requireLogin, async (req, res) => {
       userid,
       question.trim(),
       category || null,
-      questionId || null
+      questionId || null,
+      abortController.signal
     );
 
+    if (abortController.signal.aborted || res.writableEnded) return;
     res.json(result);
   } catch (error) {
     console.error("❌ チューター質問エラー:", error);
@@ -58,6 +70,7 @@ router.post("/ask", requireLogin, async (req, res) => {
 
 // 質問に答える（ストリーミング・NDJSON 1行1イベント）
 router.post("/ask/stream", requireLogin, async (req, res) => {
+  const abortController = bindClientAbort(res);
   try {
     await ensureKnowledgeBase();
 
@@ -79,14 +92,16 @@ router.post("/ask/stream", requireLogin, async (req, res) => {
       userid,
       question.trim(),
       category || null,
-      questionId || null
+      questionId || null,
+      abortController.signal
     )) {
+      if (abortController.signal.aborted || res.writableEnded) break;
       res.write(JSON.stringify(evt) + "\n");
       if (typeof res.flush === "function") {
         res.flush();
       }
     }
-    res.end();
+    if (!res.writableEnded) res.end();
   } catch (error) {
     console.error("❌ チューターストリーム質問エラー:", error);
     if (!res.headersSent) {
@@ -115,6 +130,7 @@ router.post("/ask/stream", requireLogin, async (req, res) => {
 
 // 問題のヒントを取得
 router.post("/hint", requireLogin, async (req, res) => {
+  const abortController = bindClientAbort(res);
   try {
     await ensureKnowledgeBase();
 
@@ -125,7 +141,8 @@ router.post("/hint", requireLogin, async (req, res) => {
       return res.status(400).json({ message: "categoryとquestionIdが必要です" });
     }
 
-    const result = await tutorService.getHint(userid, category, questionId);
+    const result = await tutorService.getHint(userid, category, questionId, abortController.signal);
+    if (abortController.signal.aborted || res.writableEnded) return;
     res.json(result);
   } catch (error) {
     console.error("❌ ヒント取得エラー:", error);

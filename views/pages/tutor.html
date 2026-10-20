@@ -446,7 +446,7 @@
       meta.textContent = 'AIチューター';
       const body = document.createElement('span');
       body.className = 'message-body';
-      body.innerHTML = '<span class="loading"></span> 考え中...';
+      body.innerHTML = '<span class="loading"></span> 順番を確認しています...';
       const sourcesEl = document.createElement('div');
       sourcesEl.className = 'sources';
       sourcesEl.style.display = 'none';
@@ -609,7 +609,15 @@
             } catch (e) {
               continue;
             }
-            if (evt.type === 'sources') {
+            if (evt.type === 'queue') {
+              if (!fullText) {
+                const label = (evt.status === 'generating' || evt.position === 1)
+                  ? '現在生成中'
+                  : `あなたは${evt.position}番目です`;
+                streamRefs.bodyEl.innerHTML = `<span class="loading"></span> ${label}`;
+                sendBtn.innerHTML = `<span class="loading"></span> ${label}`;
+              }
+            } else if (evt.type === 'sources') {
               setAssistantSources(streamRefs.sourcesEl, evt.sources);
             } else if (evt.type === 'chunk' && evt.text) {
               fullText += evt.text;

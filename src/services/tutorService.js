@@ -1,6 +1,7 @@
 const { ChatOllama } = require("@langchain/ollama");
 const vectorStore = require("./vectorStore");
 const tutorQaLog = require("./tutorQaLog");
+const tutorQueue = require("./tutorQueue");
 const fs = require("fs");
 const path = require("path");
 const { isQuestionPublished } = require("../utils/quizVisibility");
@@ -180,7 +181,47 @@ ${contextText}`;
     }));
   }
 
-  async answerQuestion(userid, question, category = null, questionId = null) {
+  _bindAbort(ticket, signal) {
+    if (!signal) return;
+    const onAbort = () => ticket.cancel();
+    if (signal.aborted) ticket.cancel();
+    else signal.addEventListener("abort", onAbort, { once: true });
+  }
+
+  /** 自分の番が来るまで、待ち順が変わるたびに queue イベントを出す */
+  async *_yieldQueueWait(ticket) {
+    let announced = null;
+    while (ticket.status === "waiting") {
+      const position = ticket.position;
+      if (position != null && position !== announced) {
+        announced = position;
+        yield { type: "queue", position, status: "waiting" };
+        continue;
+      }
+      await ticket.waitForChange();
+    }
+  }
+
+  async answerQuestion(userid, question, category = null, questionId = null, signal = null) {
+    const ticket = tutorQueue.enter();
+    this._bindAbort(ticket, signal);
+    try {
+      while (ticket.status === "waiting") {
+        await ticket.waitForChange();
+      }
+      if (ticket.status === "cancelled" || signal?.aborted) {
+        return { answer: "質問はキャンセルされました。", sources: [], cancelled: true };
+      }
+      return await this._answerQuestionNow(userid, question, category, questionId, signal);
+    } finally {
+      ticket.finish();
+    }
+  }
+
+  async _answerQuestionNow(userid, question, category = null, questionId = null, signal = null) {
+    if (signal?.aborted) {
+      return { answer: "質問はキャンセルされました。", sources: [], cancelled: true };
+    }
     if (!this.llm) {
       if (!this.initialize()) {
         const out = {
@@ -201,7 +242,11 @@ ${contextText}`;
         questionId
       );
 
-      const response = await this.llm.invoke(messages);
+      if (signal?.aborted) {
+        return { answer: "質問はキャンセルされました。", sources: [], cancelled: true };
+      }
+
+      const response = await this.llm.invoke(messages, signal ? { signal } : undefined);
 
       let answer = response.content || "";
       if (typeof answer !== "string") {
@@ -223,6 +268,9 @@ ${contextText}`;
       logTutorExchange(userid, question, category, questionId, out, this.getModelName());
       return out;
     } catch (error) {
+      if (signal?.aborted || error?.name === "AbortError") {
+        return { answer: "質問はキャンセルされました。", sources: [], cancelled: true };
+      }
       console.error("❌ チューター回答生成エラー:", error);
       const out = {
         answer: "申し訳ございません。エラーが発生しました。もう一度お試しください。",
@@ -236,9 +284,25 @@ ${contextText}`;
 
   /**
    * NDJSON / fetch ストリーム用: { type, ... } を順に yield
-   * type: sources | chunk | done | error
+   * type: queue | sources | chunk | done | error
    */
-  async *streamAnswerQuestion(userid, question, category = null, questionId = null) {
+  async *streamAnswerQuestion(userid, question, category = null, questionId = null, signal = null) {
+    const ticket = tutorQueue.enter();
+    this._bindAbort(ticket, signal);
+    try {
+      yield* this._yieldQueueWait(ticket);
+      if (ticket.status === "cancelled" || signal?.aborted) return;
+
+      yield { type: "queue", position: 1, status: "generating" };
+      yield* this._streamAnswerNow(userid, question, category, questionId, signal);
+    } finally {
+      ticket.finish();
+    }
+  }
+
+  async *_streamAnswerNow(userid, question, category, questionId, signal) {
+    if (signal?.aborted) return;
+
     if (!this.llm) {
       if (!this.initialize()) {
         const out = {
@@ -255,19 +319,24 @@ ${contextText}`;
     let relevantDocs = [];
     try {
       const built = await this._buildMessagesAndDocs(userid, question, category, questionId);
+      if (signal?.aborted) return;
+
       relevantDocs = built.relevantDocs;
       const sources = this._sourcesFromDocs(relevantDocs);
       yield { type: "sources", sources };
 
-      const stream = await this.llm.stream(built.messages);
+      const stream = await this.llm.stream(built.messages, signal ? { signal } : undefined);
       let rawAnswer = "";
       for await (const chunk of stream) {
+        if (signal?.aborted) return;
         const text = chunkContentText(chunk);
         if (text) {
           rawAnswer += text;
           yield { type: "chunk", text };
         }
       }
+
+      if (signal?.aborted) return;
 
       let answer = normalizeAnswerLength(rawAnswer);
 
@@ -278,6 +347,7 @@ ${contextText}`;
       logTutorExchange(userid, question, category, questionId, out, this.getModelName());
       yield { type: "done", answer };
     } catch (error) {
+      if (signal?.aborted || error?.name === "AbortError") return;
       console.error("❌ チューターストリームエラー:", error);
       const out = {
         answer: "申し訳ございません。エラーが発生しました。もう一度お試しください。",
@@ -289,7 +359,7 @@ ${contextText}`;
     }
   }
 
-  async getHint(userid, category, questionId) {
+  async getHint(userid, category, questionId, signal = null) {
     try {
       const quizData = JSON.parse(
         fs.readFileSync(path.join(require("../config/paths").CONFIG, "quizData.json"), "utf-8")
@@ -313,7 +383,7 @@ ${contextText}`;
       }
 
       const question = `この問題のヒントを教えてください: ${problem.title}\n${problem.desc}`;
-      return await this.answerQuestion(userid, question, category, questionId);
+      return await this.answerQuestion(userid, question, category, questionId, signal);
     } catch (error) {
       console.error("❌ ヒント取得エラー:", error);
       const out = {
