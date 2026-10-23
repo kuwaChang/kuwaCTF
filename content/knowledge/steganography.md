@@ -1,11 +1,13 @@
 # Steganography 不足知識まとめ
 
 ## 目的
-画像・音声・QRコードなどに隠された情報を調べる問題で、AI先生が具体的な探索手順を返せるようにする。
+画像・音声・QRコードなどに隠された情報の探し方をまとめる。
 
-## 評価で見えた不足
+## 確認するポイント
 
-### 1. QRコード隠蔽の説明が抽象的
+この節の `file`、`binwalk`、`zsteg`、`strings`、`steghide`、`sox` の対応OSは (LinuxまたはWSL) です。`exiftool` は Windows と (LinuxまたはWSL) です。`strings -a` の `-a` は実行可能領域以外も含めます。`zsteg -a` の `-a` はLSBの組み合わせを広く試します。`grep -iE` の `-i` は大文字小文字を無視し、`-E` は `|` をまたはの意味で使います。
+
+### 1. QRコードの隠し方と見つけ方
 QRコードを使った隠蔽では「QRを作る」だけでなく、どう隠すか・どう見つけるかを説明する。
 
 代表例：
@@ -33,7 +35,7 @@ strings -a image.png
 - アルファチャンネルを見る
 - 拡大して隅や余白を見る
 
-### 2. LSB解析の説明不足
+### 2. LSB解析
 PNG/BMPなどではLSBに情報が隠されることがある。
 
 ```sh
@@ -51,7 +53,7 @@ zsteg -a image.png
 ヒント例：
 > 色の見た目ではなく、各ピクセルの最下位ビットに注目してください。PNGなら `zsteg` が有効です。
 
-### 3. steghideの用途の説明不足
+### 3. steghide
 JPEG/BMP/WAV/AUでは `steghide` が使われることがある。
 
 ```sh
@@ -63,7 +65,7 @@ steghide extract -sf image.jpg
 - パスフレーズが必要な場合がある。
 - パスワード候補は問題文・ファイル名・EXIF・stringsから探す。
 
-### 4. 画像メタデータの確認不足
+### 4. 画像メタデータ
 ```sh
 exiftool image.jpg
 identify -verbose image.jpg
@@ -78,7 +80,7 @@ strings -a image.jpg | grep -iE 'flag|ctf|comment|password|key'
 - CreateDate
 - UserComment
 
-### 5. 音声ステガノの基本不足
+### 5. 音声ファイル
 ```sh
 file audio.wav
 exiftool audio.wav
@@ -93,28 +95,22 @@ sox audio.wav spectrogram -o spec.png
 - モールス信号ではないか
 - DTMF音ではないか
 
-## 回答テンプレート
+## 画像の確認手順
 
-```md
-### 着眼点
-この問題は画像の見た目だけでなく、メタデータ・ビット・埋め込みファイルを確認するタイプです。
+着眼点は、見た目だけでなくメタデータ、最下位ビット、埋め込みファイルです。
 
-### 確認手順
+対応OS: (LinuxまたはWSL)
+
 ```sh
-file <file>
-exiftool <file>
-binwalk <file>
-zsteg <file>
-strings -a <file>
+file 対象ファイル
+exiftool 対象ファイル
+binwalk 対象ファイル
+zsteg 対象ファイル
+strings -a 対象ファイル
 ```
 
-### 見るポイント
+見るポイント:
 - QRが薄く重なっていないか
 - 端や余白に小さいコードがないか
 - LSBにASCII文字列がないか
 - 末尾にZIPなどが結合されていないか
-```
-
-## 情報開示の注意
-- QRの読み取り結果そのものは最終答えに近いので、最初から出さない。
-- 先に「どこを加工・確認すれば読めるか」を教える。

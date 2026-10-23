@@ -9,6 +9,24 @@ const DEFAULT_OLLAMA_EMBEDDING_MODEL = "bge-m3";
  * 簡易テキストスプリッター（@langchain/community の ESM/dist 問題を避けるため自前実装）
  * chunkSize / chunkOverlap で RecursiveCharacterTextSplitter と同様に分割する
  */
+const OMITTED_SECTION_NAMES = ["ローカルLLM回答方針", "安全な回答方針", "情報開示の注意"];
+
+/** モデル向けの指示節は検索に載せない */
+function omitInstructionSections(markdown) {
+  const lines = String(markdown || "").split(/\r?\n/);
+  const out = [];
+  let skipping = false;
+  for (const line of lines) {
+    const heading = line.match(/^#{1,3}\s+(.+?)\s*$/);
+    if (heading) {
+      skipping = OMITTED_SECTION_NAMES.some((name) => heading[1].includes(name));
+      if (skipping) continue;
+    }
+    if (!skipping) out.push(line);
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n");
+}
+
 function splitTextIntoChunks(text, chunkSize = 1000, chunkOverlap = 100) {
   const chunks = [];
   let start = 0;
@@ -132,7 +150,7 @@ class VectorStoreService {
 
     for (const file of files) {
       const filePath = path.join(knowledgeDir, file);
-      const content = fs.readFileSync(filePath, "utf-8");
+      const content = omitInstructionSections(fs.readFileSync(filePath, "utf-8"));
       const category = path.basename(file, ".md");
 
       const chunks = splitTextIntoChunks(content, CHUNK_SIZE, CHUNK_OVERLAP);
