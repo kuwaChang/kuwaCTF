@@ -1,0 +1,330 @@
+{
+  "exportedAt": "2026-10-26T06:56:21.542Z",
+  "entryCount": 9,
+  "entries": [
+    {
+      "userid": "admin",
+      "question": "どの問題がおすすめ？",
+      "category": null,
+      "questionId": null,
+      "answer": "です。初心者向けの問題が多く、着眼点や段階ヒントが明確に示されています。特に「Easy2」や「beginner1」は、基本的な操作や検索コマンドの使い方を学ぶことができます。",
+      "sources": [
+        {
+          "category": "meta",
+          "source": "meta.md",
+          "relevance": "0.01"
+        },
+        {
+          "category": "easy2",
+          "source": "easy2.md",
+          "relevance": "0.01"
+        },
+        {
+          "category": "medium1",
+          "source": "medium1.md",
+          "relevance": "0.01"
+        },
+        {
+          "category": "easy2",
+          "source": "easy2.md",
+          "relevance": "-0.02"
+        },
+        {
+          "category": "medium1",
+          "source": "medium1.md",
+          "relevance": "-0.03"
+        }
+      ],
+      "model": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest",
+      "recordedAt": "2026-10-21T17:23:29.206Z"
+    },
+    {
+      "userid": "admin",
+      "question": "おすすめの問題は？",
+      "category": null,
+      "questionId": null,
+      "answer": "です。",
+      "sources": [
+        {
+          "category": "meta",
+          "source": "meta.md",
+          "relevance": "0.06"
+        },
+        {
+          "category": "medium1",
+          "source": "medium1.md",
+          "relevance": "0.03"
+        },
+        {
+          "category": "easy2",
+          "source": "easy2.md",
+          "relevance": "0.02"
+        },
+        {
+          "category": "easy2",
+          "source": "easy2.md",
+          "relevance": "0.01"
+        },
+        {
+          "category": "medium1",
+          "source": "medium1.md",
+          "relevance": "-0.00"
+        }
+      ],
+      "model": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest",
+      "recordedAt": "2026-10-21T17:25:21.567Z"
+    },
+    {
+      "userid": "admin",
+      "question": "RSA暗号について教えて",
+      "category": null,
+      "questionId": null,
+      "answer": "です。RSA暗号は、公開鍵暗号の一種で、安全性が高く広く使われています。基本要素は、公開鍵、秘密鍵、n、e、dです。nは大きな素数の積、eは公開指数、dは秘密指数です。基本的な流れは、暗号化がc = m^e mod n、復号がm = c^d mod nです。",
+      "sources": [
+        {
+          "category": "crypto",
+          "source": "crypto.md",
+          "relevance": "0.32"
+        },
+        {
+          "category": "crypto",
+          "source": "crypto.md",
+          "relevance": "0.31"
+        },
+        {
+          "category": "crypto",
+          "source": "crypto.md",
+          "relevance": "0.27"
+        },
+        {
+          "category": "crypto",
+          "source": "crypto.md",
+          "relevance": "0.23"
+        },
+        {
+          "category": "crypto",
+          "source": "crypto.md",
+          "relevance": "0.23"
+        }
+      ],
+      "model": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest",
+      "recordedAt": "2026-10-21T17:26:04.464Z"
+    },
+    {
+      "userid": "admin",
+      "question": "開発者ツールの使い方教えて",
+      "category": null,
+      "questionId": null,
+      "answer": "です。開発者ツールは、F12キーを押すことで開くことができます。開いた後は、Elements、Console、Network、Applicationのタブを使用して、Webページの構造や通信内容を確認することができます。\n\nElementsタブでは、HTMLの構造やCSSのスタイルを確認することができます。\n\nConsoleタブでは、JavaScriptのエラーなどを確認することができます。\n\nNetworkタブでは、Webページの通信内容を確認することができます。通信の詳細やレスポンスの内容を確認することができます。\n\nApplicationタブでは、CookieやLocalStorageを確認することができます。\n\nこれらのタブを使用することで、Webページの動作や通信内容を詳細に確認することができます。",
+      "sources": [
+        {
+          "category": "web",
+          "source": "web.md",
+          "relevance": "0.12"
+        },
+        {
+          "category": "meta",
+          "source": "meta.md",
+          "relevance": "0.10"
+        },
+        {
+          "category": "web",
+          "source": "web.md",
+          "relevance": "0.09"
+        },
+        {
+          "category": "web",
+          "source": "web.md",
+          "relevance": "0.06"
+        },
+        {
+          "category": "web",
+          "source": "web.md",
+          "relevance": "0.06"
+        }
+      ],
+      "model": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest",
+      "recordedAt": "2026-10-21T17:28:15.084Z"
+    },
+    {
+      "userid": "admin",
+      "question": "開発者ツールについて教えて",
+      "category": null,
+      "questionId": null,
+      "answer": "CTFの問題を解く上で、開発者ツールは非常に重要なツールです。特に、ブラウザのF12キーを押すことで開く開発者ツールは、Webページの構造や通信を確認することができます。\n\n開発者ツールの主要な機能は、Elements、Console、Network、Applicationの4つです。\n\n- Elements: HTMLの構造や要素を確認することができます。\n- Console: JavaScriptのエラー、警告、情報を確認することができます。\n- Network: Webページの通信を確認することができます。リクエストやレスポンスの内容を確認することができます。\n- Application: CookieやLocal Storageを確認することができます。\n\nこれらの機能を使用することで、Webページのセキュリティを確認したり、問題を解くことができます。",
+      "sources": [
+        {
+          "category": "meta",
+          "source": "meta.md",
+          "relevance": "0.12"
+        },
+        {
+          "category": "web",
+          "source": "web.md",
+          "relevance": "0.11"
+        },
+        {
+          "category": "web",
+          "source": "web.md",
+          "relevance": "0.10"
+        },
+        {
+          "category": "tools_and_commands",
+          "source": "tools_and_commands.md",
+          "relevance": "0.08"
+        },
+        {
+          "category": "web",
+          "source": "web.md",
+          "relevance": "0.06"
+        }
+      ],
+      "model": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest",
+      "recordedAt": "2026-10-21T17:30:34.240Z"
+    },
+    {
+      "userid": "admin",
+      "question": "具体的に教えて",
+      "category": null,
+      "questionId": null,
+      "answer": "CTFの問題を解く上で、開発者ツールのElementsを使用する方法を教えます。\n\n例えば、CTFの問題で、Webページに「Hello World」と表示することができます。問題文には「Hello World」と表示することができますが、実際のWebページには「Hello World」と表示することができます。\n\nこの問題を解くには、開発者ツールのElementsを使用する必要があります。Elementsを使用することで、Webページの構造や要素を確認することができます。\n\n手順は以下の通りです。\n\n1. F12キーを押すことで、開発者ツールを起動します。\n2. Elementsを選択します。\n3. Elementsのパネルで、Webページの構造や要素を確認します。\n4. 「Hello World」と表示することができますが、実際のWebページには「Hello World」と表示することができます。\n\nこの問題を解くには、開発者ツールのElementsを使用する必要があります。Elementsを使用することで、Webページの構造や要素を確認することができます。\n\n次の手順を試してみてください。\n\n次にやること:\n- Elementsのパネルで、Webページの構造や要素を確認する。\n理由:\n- Webページの構造や要素を確認することで、問題の解き方がわかる。",
+      "sources": [
+        {
+          "category": "osint",
+          "source": "osint.md",
+          "relevance": "0.02"
+        },
+        {
+          "category": "meta",
+          "source": "meta.md",
+          "relevance": "0.02"
+        },
+        {
+          "category": "hard1",
+          "source": "hard1.md",
+          "relevance": "0.01"
+        },
+        {
+          "category": "easy2",
+          "source": "easy2.md",
+          "relevance": "0.01"
+        },
+        {
+          "category": "reversing_pwn",
+          "source": "reversing_pwn.md",
+          "relevance": "0.00"
+        }
+      ],
+      "model": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest",
+      "recordedAt": "2026-10-21T17:32:00.630Z"
+    },
+    {
+      "userid": "admin",
+      "question": "こんいちは",
+      "category": null,
+      "questionId": null,
+      "answer": "CTFの学習を進めるため、着眼点を1つお伝えします。\n\n着眼点:\n表面ではなく裏側はHTMLソースやコメント確認の合図です。見た目でなくDOM/ソース構造を調べる必要があります。\n\n次にやること:\n開発者ツールでページソースを確認します。\n\n理由:\n表面上の情報ではなく、裏側の情報を確認する必要があるためです。",
+      "sources": [
+        {
+          "category": "medium1",
+          "source": "medium1.md",
+          "relevance": "-0.29"
+        },
+        {
+          "category": "hard2",
+          "source": "hard2.md",
+          "relevance": "-0.33"
+        },
+        {
+          "category": "hard1",
+          "source": "hard1.md",
+          "relevance": "-0.34"
+        },
+        {
+          "category": "web",
+          "source": "web.md",
+          "relevance": "-0.34"
+        },
+        {
+          "category": "web",
+          "source": "web.md",
+          "relevance": "-0.35"
+        }
+      ],
+      "model": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest",
+      "recordedAt": "2026-10-21T17:32:24.778Z"
+    },
+    {
+      "userid": "admin",
+      "question": "CTFのジャンル教えて",
+      "category": null,
+      "questionId": null,
+      "answer": "CTFは、Capture The Flagの略で、問題の中に隠された `flag{...}` のような文字列を見つける競技・学習形式です。CTFには、Forensics、Steganography、Crypto、Web、Reversing、Pwnの6つの主要な分野があります。",
+      "sources": [
+        {
+          "category": "learning_sites_and_terms",
+          "source": "learning_sites_and_terms.md",
+          "relevance": "0.16"
+        },
+        {
+          "category": "web",
+          "source": "web.md",
+          "relevance": "0.11"
+        },
+        {
+          "category": "learning_sites_and_terms",
+          "source": "learning_sites_and_terms.md",
+          "relevance": "0.10"
+        },
+        {
+          "category": "crypto",
+          "source": "crypto.md",
+          "relevance": "0.06"
+        },
+        {
+          "category": "crypto",
+          "source": "crypto.md",
+          "relevance": "0.04"
+        }
+      ],
+      "model": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest",
+      "recordedAt": "2026-10-21T17:32:44.061Z"
+    },
+    {
+      "userid": "admin",
+      "question": "どれが初心者におすすめ？",
+      "category": null,
+      "questionId": null,
+      "answer": "初心者向けのCTFの分野は、CryptoやForensicsです。Cryptoは暗号やエンコードを扱う分野で、Forensicsはファイルや通信ログを調べて痕跡を見つける分野です。特に、Cryptoは暗号の基本的な知識があれば、初心者でも解ける問題が多く、Forensicsはファイルや通信ログの解析方法を学ぶことができます。",
+      "sources": [
+        {
+          "category": "learning_sites_and_terms",
+          "source": "learning_sites_and_terms.md",
+          "relevance": "0.03"
+        },
+        {
+          "category": "easy1",
+          "source": "easy1.md",
+          "relevance": "0.02"
+        },
+        {
+          "category": "meta",
+          "source": "meta.md",
+          "relevance": "-0.03"
+        },
+        {
+          "category": "learning_sites_and_terms",
+          "source": "learning_sites_and_terms.md",
+          "relevance": "-0.04"
+        },
+        {
+          "category": "easy1",
+          "source": "easy1.md",
+          "relevance": "-0.05"
+        }
+      ],
+      "model": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest",
+      "recordedAt": "2026-10-21T17:33:37.207Z"
+    }
+  ]
+}
