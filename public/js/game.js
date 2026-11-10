@@ -1236,11 +1236,13 @@ function checkAndHandleLocalTamper(baseReason) {
   if (!raw) return;
   const sig = localStorage.getItem(SAVE_SIGNATURE_KEY);
   const currentRawSig = hashString(raw);
-  const saveChangedInRuntime = runtimeSaveSnapshot !== null && raw !== runtimeSaveSnapshot;
   const signatureMismatch = Boolean(sig) && sig !== currentRawSig;
-  const signatureChangedInRuntime = runtimeSigSnapshot !== null && sig !== runtimeSigSnapshot;
 
-  if (!saveChangedInRuntime && !signatureMismatch && !signatureChangedInRuntime) {
+  // 署名が本文と一致する更新は、戦闘ページなど別画面の正規セーブ。
+  // このページのメモリ控えが古いだけで、改ざんではない。
+  if (!signatureMismatch) {
+    runtimeSaveSnapshot = raw;
+    runtimeSigSnapshot = sig ?? currentRawSig;
     return;
   }
 
@@ -1252,7 +1254,7 @@ function checkAndHandleLocalTamper(baseReason) {
   }
   lastReportedTamperFingerprint = fingerprint;
 
-  const reason = signatureMismatch ? `${baseReason}_signature_mismatch` : `${baseReason}_runtime_changed`;
+  const reason = `${baseReason}_signature_mismatch`;
   recordCheatDetected(reason).catch((err) => {
     console.warn("runtime cheat report failed", err);
   });

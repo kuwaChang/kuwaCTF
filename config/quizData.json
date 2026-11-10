@@ -219,7 +219,7 @@
       ]
     },
     "medium5": {
-      "answer": "FLAG{20030503}",
+      "answer": "FLAG{20040503}",
       "title": "回廊「大図書館」",
       "categoryId": "osint",
       "desc": "膨大な本棚のデータが並ぶ回廊。\nしかし、奥の扉は「OFFLINE」と表示されている。\n\n- **メンター:** \n「アトラスの『大図書館』だ。だが、メインデータは消去されている…。」\n\n- **メンター:** \n「扉の認証システムは『消去直前にサイト（図書館の入り口）に掲載されていた特定の年代の言葉』を要求している。サイトはもう存在しない。」\n\n- **メンター:** \n「だが、ネットワークの“残響”がどこかに残っているはずだ。過去のサイトにアクセスし、『指定されている言葉』を見つけてくれ。」\n\nURL: yllibyar.tripod.com\n\n※この問題では、2004/04/29において\n\"I have been unable to edit my NEW Link(s) above:\"と記録されている年月日を答えてください\n\n例: FLAG{20040429}",
@@ -240,7 +240,7 @@
       "point": 10
     },
     "medium1": {
-      "answer": "FLAG{this_is_a_secret_key}",
+      "answer": "FLAG{this is a secret key}",
       "title": "暗号化された内部メモ",
       "categoryId": "crypto",
       "desc": "調査メモ: 「XがE-Corpの内部チャットログを入手したが、彼らは単純な換字式暗号を使っていたらしい。『彼らの古い体質がアダとなったな』とXは言っていた。分析を行い、この暗号文からフラグを読み解け。」",
@@ -638,7 +638,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics6": {
       "answer": "FLAG{}",
@@ -647,7 +648,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics7": {
       "answer": "FLAG{}",
@@ -656,7 +658,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics8": {
       "answer": "FLAG{}",
@@ -665,7 +668,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics9": {
       "answer": "FLAG{}",
@@ -674,7 +678,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics10": {
       "answer": "FLAG{}",
@@ -683,7 +688,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics11": {
       "answer": "FLAG{}",
@@ -692,7 +698,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics12": {
       "answer": "FLAG{}",
@@ -701,7 +708,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics13": {
       "answer": "FLAG{}",
@@ -710,7 +718,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics14": {
       "answer": "FLAG{}",
@@ -719,7 +728,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics15": {
       "answer": "FLAG{}",
@@ -728,7 +738,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     },
     "forensics16": {
       "answer": "FLAG{}",
@@ -737,7 +748,8 @@
       "desc": "",
       "hint": [],
       "point": 10,
-      "files": []
+      "files": [],
+      "published": false
     }
   },
   "Crypto": {

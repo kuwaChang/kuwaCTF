@@ -6,8 +6,8 @@ const path = require("path");
 const DEFAULT_OLLAMA_EMBEDDING_MODEL = "bge-m3";
 
 /**
- * 簡易テキストスプリッター（@langchain/community の ESM/dist 問題を避けるため自前実装）
- * chunkSize / chunkOverlap で RecursiveCharacterTextSplitter と同様に分割する
+ * 見出し境界で区切り、1チャンクが次の見出しに入り込まないようにする。
+ * 節が chunkSize を超えるときだけ、その節の本文を改行・空白で再分割する。
  */
 const OMITTED_SECTION_NAMES = ["ローカルLLM回答方針", "安全な回答方針", "情報開示の注意"];
 
@@ -42,6 +42,70 @@ function splitTextIntoChunks(text, chunkSize = 1000, chunkOverlap = 100) {
     const chunk = text.slice(start, end).trim();
     if (chunk.length > 0) chunks.push(chunk);
     start = end - (end - start > chunkOverlap ? chunkOverlap : 0);
+  }
+  return chunks;
+}
+
+/**
+ * 見出し（# 〜 ######）ごとに節へ分ける。
+ * 本文が空の見出しはチャンクにせず、子の節の先頭に祖先見出しとして残す。
+ * コードフェンス内の # 行は見出しにしない。
+ */
+function splitMarkdownByHeadings(markdown) {
+  const lines = String(markdown || "").split(/\r?\n/);
+  const sections = [];
+  const stack = [];
+  let body = [];
+  let inFence = false;
+
+  function flush() {
+    const text = body.join("\n").trim();
+    body = [];
+    if (!text) return;
+    sections.push({
+      prefix: stack.map((heading) => heading.line).join("\n"),
+      body: text
+    });
+  }
+
+  for (const line of lines) {
+    if (/^ {0,3}(`{3,}|~{3,})/.test(line)) {
+      inFence = !inFence;
+      body.push(line);
+      continue;
+    }
+    const heading = !inFence && line.match(/^(#{1,6})\s+\S/);
+    if (heading) {
+      flush();
+      const level = heading[1].length;
+      while (stack.length > 0 && stack[stack.length - 1].level >= level) {
+        stack.pop();
+      }
+      stack.push({ level, line });
+      continue;
+    }
+    body.push(line);
+  }
+  flush();
+  return sections;
+}
+
+function splitMarkdownIntoChunks(markdown, chunkSize = 1000, chunkOverlap = 100) {
+  const chunks = [];
+  for (const section of splitMarkdownByHeadings(markdown)) {
+    const header = section.prefix ? `${section.prefix}\n` : "";
+    const whole = `${header}${section.body}`.trim();
+    if (whole.length <= chunkSize) {
+      chunks.push(whole);
+      continue;
+    }
+
+    const budget = header.length < chunkSize ? chunkSize - header.length : chunkSize;
+    const overlap = Math.min(chunkOverlap, Math.max(0, budget - 1));
+    for (const piece of splitTextIntoChunks(section.body, budget, overlap)) {
+      const chunk = `${header}${piece}`.trim();
+      if (chunk) chunks.push(chunk);
+    }
   }
   return chunks;
 }
@@ -153,7 +217,7 @@ class VectorStoreService {
       const content = omitInstructionSections(fs.readFileSync(filePath, "utf-8"));
       const category = path.basename(file, ".md");
 
-      const chunks = splitTextIntoChunks(content, CHUNK_SIZE, CHUNK_OVERLAP);
+      const chunks = splitMarkdownIntoChunks(content, CHUNK_SIZE, CHUNK_OVERLAP);
 
       for (let i = 0; i < chunks.length; i++) {
         allChunks.push(chunks[i]);
