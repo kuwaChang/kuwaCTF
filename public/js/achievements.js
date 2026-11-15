@@ -243,8 +243,24 @@ function createAchievementCard(achievement) {
   return card;
 }
 
+// 同時に複数解除されたとき、前の通知を消さずに順番に表示するためのキュー
+const achievementNotificationQueue = [];
+let achievementNotificationActive = false;
+
 // 実績解除通知を表示（マインクラフト風）
 export function showAchievementUnlocked(achievement) {
+  achievementNotificationQueue.push(achievement);
+  if (!achievementNotificationActive) showNextAchievementNotification();
+}
+
+function showNextAchievementNotification() {
+  const achievement = achievementNotificationQueue.shift();
+  if (!achievement) {
+    achievementNotificationActive = false;
+    return;
+  }
+  achievementNotificationActive = true;
+
   // 既存の通知があれば削除
   const existingNotification = document.getElementById("achievement-notification");
   if (existingNotification) {
@@ -329,25 +345,22 @@ export function showAchievementUnlocked(achievement) {
   `;
 
   // クリックで閉じる
-  notification.addEventListener("click", () => {
+  // 閉じたら次の通知へ進む（クリックと自動消去の二重実行を防ぐ）
+  let closed = false;
+  const closeNotification = () => {
+    if (closed) return;
+    closed = true;
     notification.style.animation = "achievementSlideOut 0.5s ease";
     setTimeout(() => {
       notification.remove();
+      showNextAchievementNotification();
     }, 500);
-  });
+  };
+  notification.addEventListener("click", closeNotification);
 
   document.body.appendChild(notification);
 
   // 7秒後に自動で削除
-  setTimeout(() => {
-    if (notification.parentNode) {
-      notification.style.animation = "achievementSlideOut 0.5s ease";
-      setTimeout(() => {
-        if (notification.parentNode) {
-          notification.remove();
-        }
-      }, 500);
-    }
-  }, 7000);
+  setTimeout(closeNotification, 7000);
 }
 

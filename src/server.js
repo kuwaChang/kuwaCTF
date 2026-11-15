@@ -1970,7 +1970,7 @@ try {
   //console.log("✅ quizルート読み込み完了");
   const adminRoutes = require("./routes/admin");
   //console.log("✅ adminルート読み込み完了");
-  const { router: achievementRoutes, checkAchievements } = require("./routes/achievements");
+  const { router: achievementRoutes, checkAchievements, dailyLoginMiddleware } = require("./routes/achievements");
   //console.log("✅ achievementsルート読み込み完了");
   const tutorRoutes = require("./routes/tutor");
   //console.log("✅ tutorルート読み込み完了");
@@ -1978,6 +1978,8 @@ try {
   const { router: feedbackRoutes, adminRouter: feedbackAdminRoutes } = require("./routes/feedback");
   const { router: announcementRoutes, adminRouter: announcementAdminRoutes } = require("./routes/announcements");
 
+  // ログイン中のアクセスを1日1回ログイン記録として残す（連続ログイン実績用）
+  app.use(dailyLoginMiddleware);
   app.use("/auth", authRoutes);
   app.use("/quiz", quizRoutes);
   app.use("/admin/announcements", announcementAdminRoutes);

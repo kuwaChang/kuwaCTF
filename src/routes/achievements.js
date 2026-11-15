@@ -137,7 +137,7 @@ async function getMaxConsecutiveCorrect(userid) {
   }
 }
 
-// 今日新規に正解した「異なる問題」数（UTC基準）
+// 今日新規に正解した「異なる問題」数（日本時間基準）
 async function getDailySolveCount(userid) {
   try {
     const row = await dbGet(
@@ -150,7 +150,7 @@ async function getDailySolveCount(userid) {
   }
 }
 
-// 今日挑戦した「異なる問題」数（正解・不正解を問わない／UTC基準）
+// 今日挑戦した「異なる問題」数（正解・不正解を問わない／日本時間基準）
 async function getDailyAttemptCount(userid) {
   try {
     const row = await dbGet(
@@ -180,54 +180,68 @@ async function getFirstTrySolveCount(userid) {
 }
 
 // 実績の進捗を更新
+// SELECT→INSERT の間に別リクエストが割り込むと UNIQUE 制約違反や二重解除が起きるため、
+// INSERT OR IGNORE + 条件付き UPDATE で原子的に処理する
 async function updateAchievementProgress(userid, achievementId, progress, maxProgress) {
   try {
+    const now = new Date().toISOString();
+    await dbRun(
+      "INSERT OR IGNORE INTO user_achievements (userid, achievement_id, progress, max_progress) VALUES (?, ?, 0, ?)",
+      [userid, achievementId, maxProgress]
+    );
+    await dbRun(
+      "UPDATE user_achievements SET progress = MAX(COALESCE(progress, 0), ?), max_progress = ? WHERE userid = ? AND achievement_id = ?",
+      [progress, maxProgress, userid, achievementId]
+    );
+    // unlocked_at が未設定のときだけ解除する。changes=1 なら「この呼び出しで解除した」
+    const unlockResult = await dbRun(
+      "UPDATE user_achievements SET unlocked_at = ? WHERE userid = ? AND achievement_id = ? AND unlocked_at IS NULL AND progress >= ?",
+      [now, userid, achievementId, maxProgress]
+    );
+    if (unlockResult.changes > 0) {
+      return { unlocked: true, achievementId };
+    }
     const row = await dbGet(
-      "SELECT * FROM user_achievements WHERE userid = ? AND achievement_id = ?",
+      "SELECT progress FROM user_achievements WHERE userid = ? AND achievement_id = ?",
       [userid, achievementId]
     );
-
-    const now = new Date().toISOString();
-    if (row) {
-      // 既に存在する場合は進捗を更新
-      const newProgress = Math.max(row.progress, progress);
-      if (newProgress >= maxProgress && !row.unlocked_at) {
-        // 実績解除
-        await dbRun(
-          "UPDATE user_achievements SET progress = ?, max_progress = ?, unlocked_at = ? WHERE userid = ? AND achievement_id = ?",
-          [newProgress, maxProgress, now, userid, achievementId]
-        );
-        return { unlocked: true, achievementId };
-      } else {
-        // 進捗のみ更新
-        await dbRun(
-          "UPDATE user_achievements SET progress = ?, max_progress = ? WHERE userid = ? AND achievement_id = ?",
-          [newProgress, maxProgress, userid, achievementId]
-        );
-        return { unlocked: false, achievementId, progress: newProgress, maxProgress };
-      }
-    } else {
-      // 新規作成
-      if (progress >= maxProgress) {
-        // すぐに解除
-        await dbRun(
-          "INSERT INTO user_achievements (userid, achievement_id, progress, max_progress, unlocked_at) VALUES (?, ?, ?, ?, ?)",
-          [userid, achievementId, progress, maxProgress, now]
-        );
-        return { unlocked: true, achievementId };
-      } else {
-        // 進捗のみ記録
-        await dbRun(
-          "INSERT INTO user_achievements (userid, achievement_id, progress, max_progress) VALUES (?, ?, ?, ?)",
-          [userid, achievementId, progress, maxProgress]
-        );
-        return { unlocked: false, achievementId, progress, maxProgress };
-      }
-    }
+    return { unlocked: false, achievementId, progress: row ? row.progress : progress, maxProgress };
   } catch (err) {
     console.error(`実績進捗更新エラー (${achievementId}):`, err);
     throw err;
   }
+}
+
+// ログイン状態のまま日付をまたいでも連続ログインが途切れないよう、
+// ログイン中のリクエストごとに「今日(JST)のアクセス」を1日1回だけ記録するミドルウェア
+function dailyLoginMiddleware(req, res, next) {
+  const userid = req.session && req.session.userid;
+  if (!userid) return next();
+  const today = getJstDateString();
+  if (req.session.lastLoginLogDate === today) return next();
+  req.session.lastLoginLogDate = today;
+  (async () => {
+    try {
+      await dbRun(
+        `CREATE TABLE IF NOT EXISTS login_logs (
+          userid TEXT NOT NULL,
+          login_date TEXT NOT NULL,
+          PRIMARY KEY (userid, login_date)
+        )`,
+        []
+      );
+      const result = await dbRun(
+        "INSERT OR IGNORE INTO login_logs (userid, login_date) VALUES (?, ?)",
+        [userid, today]
+      );
+      if (result.changes > 0) {
+        await checkAchievements(userid, "login_streak", { logged_in: true });
+      }
+    } catch (err) {
+      console.error("ログイン履歴記録エラー (ミドルウェア):", err);
+    }
+  })();
+  next();
 }
 
 // 実績チェック関数（外部から呼び出し可能）
@@ -311,13 +325,19 @@ async function checkAchievements(userid, eventType, eventData) {
         case "all_categories":
           // 全カテゴリー制覇
           if (eventData.solved) {
+            // solved.category は問題セット名(Easy1, WEB など)なので、quizData の categoryId に変換して判定する
+            const quizData = JSON.parse(fs.readFileSync(path.join(paths.CONFIG, "quizData.json"), "utf-8"));
             const rows = await dbAll(
-              "SELECT DISTINCT category FROM solved WHERE userid = ?",
+              "SELECT category, qid FROM solved WHERE userid = ?",
               [userid]
             );
-            const solvedCategories = rows.map(r => r.category);
+            const solvedCategories = new Set();
+            for (const r of rows) {
+              const question = quizData[r.category]?.[r.qid];
+              if (question && question.categoryId) solvedCategories.add(question.categoryId);
+            }
             const requiredCategories = achievement.condition.categories;
-            const allSolved = requiredCategories.every(cat => solvedCategories.includes(cat));
+            const allSolved = requiredCategories.every(cat => solvedCategories.has(cat));
             
             if (allSolved) {
               progress = requiredCategories.length;
@@ -703,12 +723,19 @@ router.get("/list", requireLogin, async (req, res) => {
         await updateAchievementProgress(userid, id, progress, maxProgress);
       }
       
+      const unlockedAtMs = unlockedAt ? new Date(unlockedAt).getTime() : NaN;
+      // 未解除の隠し実績は、APIレスポンスからも内容（タイトル・説明・アイコン）を伏せる
+      const visible = achievement.hidden && !unlocked
+        ? { ...achievement, title: "???", description: "この実績は隠されています", icon: "❓" }
+        : achievement;
       result[id] = {
-        ...achievement,
+        ...visible,
         progress: progress,
         maxProgress: maxProgress,
         unlocked: unlocked,
-        unlockedAt: unlockedAt
+        unlockedAt: unlockedAt,
+        // 通知判定はサーバー時刻で行う（クライアントの時計がずれていても通知が出るように）
+        recentlyUnlocked: unlocked && !Number.isNaN(unlockedAtMs) && Date.now() - unlockedAtMs < 10000
       };
     }
 
@@ -719,16 +746,30 @@ router.get("/list", requireLogin, async (req, res) => {
   }
 });
 
-// 実績定義を取得（管理者用）
+// 実績定義を取得（管理者用）。隠し実績の内容が含まれるため管理者のみに限定する
 router.get("/definitions", requireLogin, (req, res) => {
+  if (req.session.role !== "admin") {
+    return res.status(403).json({ message: "権限がありません" });
+  }
   const achievements = loadAchievements();
   res.json(achievements);
 });
 
-// 実績チェックを手動実行（デバッグ用）
+// クライアントから実績チェックを依頼してよいイベント
+// - open_modal / rpg_cheat: クライアント側でしか検知できないイベント
+// - score: サーバー側でDBのスコアを再確認して判定する（eventData の値は使わない）
+// それ以外（正解数・連続正解など）は、サーバーが解答処理の中で判定するので受け付けない
+const CLIENT_ALLOWED_EVENTS = new Set(["open_modal", "rpg_cheat", "score"]);
+
+// クライアント起点の実績チェック
 router.post("/check", requireLogin, async (req, res) => {
   const userid = req.session.userid;
-  const { eventType, eventData } = req.body;
+  const { eventType } = req.body || {};
+  if (!CLIENT_ALLOWED_EVENTS.has(eventType)) {
+    return res.status(400).json({ message: "このイベントは受け付けていません" });
+  }
+  // eventData はクライアントの値を信用せず、イベントごとにサーバー側で組み立てる
+  const eventData = { opened: true, cheat_detected: true };
   
   try {
     const unlocked = await checkAchievements(userid, eventType, eventData);
@@ -740,4 +781,4 @@ router.post("/check", requireLogin, async (req, res) => {
 });
 
 // 外部から呼び出し可能にする
-module.exports = { router, checkAchievements };
+module.exports = { router, checkAchievements, dailyLoginMiddleware };

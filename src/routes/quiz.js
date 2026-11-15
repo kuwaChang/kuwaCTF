@@ -98,7 +98,8 @@ function checkCoordinates(userAnswer, correctAnswer, tolerance = 0.001) {
 
 // 正解判定
 router.post("/checkAnswer", requireLogin, (req, res) => {
-  const { category, qid, answer, answerType: clientAnswerType, point, usedHint } = req.body;
+  // point はクライアントから受け取らない（改ざんでスコアを水増しできるため）。配点は問題データから取る
+  const { category, qid, answer, answerType: clientAnswerType, usedHint } = req.body;
   const userid = req.session.userid;
   const rawData = JSON.parse(fs.readFileSync(quizPath, "utf-8"));
   const data = replaceLocalhostInQuizData(rawData);
@@ -109,6 +110,8 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
     return res.status(404).json({ message: "問題が見つかりません" });
   }
   
+  const point = Number(question.point) || 0;
+
   // 問題のcategoryIdを取得（実績チェック用）
   const questionCategoryId = question.categoryId || null;
   
@@ -165,8 +168,8 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
       // スコア更新と実績チェックを実行する関数
       const executeScoreUpdateAndAchievementCheck = () => {
         // 新規正解を解答ログに記録（連続正解・日次正解・ノーミス判定用）
-        logAnswerAttempt(userid, category, qid, true, true);
-
+        // 解答ログの INSERT 完了を待ってから実績チェックする（連続正解・日次系の取りこぼし防止）
+        logAnswerAttempt(userid, category, qid, true, true, () => {
         db.run("UPDATE users SET score = score + ? WHERE userid = ?", [point, userid], (err) => {
           if (err) {
             console.error("DB update error:", err);
@@ -236,6 +239,7 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
           
           res.json({ correct: true, message: "正解！" });
         });
+        });
       };
       
       // INSERTを実行する関数
@@ -282,12 +286,12 @@ router.post("/checkAnswer", requireLogin, (req, res) => {
     });
   } else {
     // 不正解も「挑戦」としてログに記録（CTF中毒の日次挑戦カウント用）
-    logAnswerAttempt(userid, category, qid, false, false);
-
-    // 1日の挑戦数の実績チェック（不正解でも挑戦としてカウント）
-    const { checkAchievements } = require("./achievements");
-    checkAchievements(userid, "daily_attempt", { attempted: true })
-      .catch(err => console.error("実績チェックエラー:", err));
+    // 1日の挑戦数の実績チェック（不正解でも挑戦としてカウント）。ログの INSERT 完了後に実行する
+    logAnswerAttempt(userid, category, qid, false, false, () => {
+      const { checkAchievements } = require("./achievements");
+      checkAchievements(userid, "daily_attempt", { attempted: true })
+        .catch(err => console.error("実績チェックエラー:", err));
+    });
 
     res.json({ correct: false, message: "不正解..." });
   }
@@ -708,12 +712,13 @@ router.delete("/writeups/replies", requireLogin, (req, res) => {
 });
 
 // 解答ログを記録するヘルパー
-function logAnswerAttempt(userid, category, qid, correct, isNewSolve) {
+function logAnswerAttempt(userid, category, qid, correct, isNewSolve, done) {
   db.run(
     "INSERT INTO answer_attempts (userid, category, qid, correct, is_new_solve, created_at) VALUES (?, ?, ?, ?, ?, ?)",
     [userid, category, qid, correct ? 1 : 0, isNewSolve ? 1 : 0, new Date().toISOString()],
     (err) => {
       if (err) console.error("解答ログ記録エラー:", err);
+      if (typeof done === "function") done();
     }
   );
 }

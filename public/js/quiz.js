@@ -1325,6 +1325,9 @@ document.getElementById("writeup-delete").addEventListener("click", async () => 
   loadWriteups(currentCategory, currentQid);
 });
 
+// 同じ実績を二重に通知しないための記録
+const notifiedAchievementIds = new Set();
+
 // 直近で解除された実績を取得して通知を表示する（サーバー処理を待つため少し遅延）
 function notifyRecentlyUnlockedAchievements() {
   setTimeout(async () => {
@@ -1333,14 +1336,11 @@ function notifyRecentlyUnlockedAchievements() {
       if (!achievementsRes.ok) return;
       const achievements = await achievementsRes.json();
       const { showAchievementUnlocked } = await import("./achievements.js");
-      // 新しく解除された実績を検出（5秒以内に解除されたもののみ通知）
+      // 新しく解除された実績を検出（判定はサーバー時刻基準の recentlyUnlocked を使う）
       for (const [id, achievement] of Object.entries(achievements)) {
-        if (achievement.unlocked && achievement.unlockedAt) {
-          const unlockDate = new Date(achievement.unlockedAt);
-          const now = new Date();
-          if (now - unlockDate < 5000) {
-            showAchievementUnlocked(achievement);
-          }
+        if (achievement.recentlyUnlocked && !notifiedAchievementIds.has(id)) {
+          notifiedAchievementIds.add(id);
+          showAchievementUnlocked(achievement);
         }
       }
     } catch (err) {
