@@ -1,242 +1,110 @@
 # ローカルLLMセットアップガイド
 
-AIチューターをローカルLLM（Ollama）で動作させるためのセットアップガイドです。
+AI チューターが使う Ollama のモデルと、その設定方法をまとめます。ChromaDB や知識ベースを含めた手順全体は [AIチューター完全ローカルセットアップガイド](./AIチューター完全ローカルセットアップガイド.md) を参照してください。
 
-## 概要
+チューターは Ollama だけで動きます。外部の API やキーは使いません。
 
-ローカルLLMを使用することで、OpenAI APIキーがなくても、インターネット接続なしでAIチューターを利用できます。Ollamaを使用してローカルでLLMと埋め込みモデルを実行します。
+## 使うモデル
 
-## 必要な環境
+| 用途 | 既定のモデル | 変更する環境変数 |
+|------|--------------|------------------|
+| チャット（回答生成） | `hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest` | `OLLAMA_MODEL` |
+| 埋め込み（知識ベース検索） | `bge-m3` | `OLLAMA_EMBEDDING_MODEL` |
 
-- Node.js (v16以上推奨)
-- Ollama（ローカルLLM実行環境）
+既定値は `src/services/tutorService.js` と `src/services/vectorStore.js` に書かれています。
 
-## セットアップ手順
+## 1. Ollama のインストール
 
-### 1. Ollamaのインストール
+[Ollama](https://ollama.com/download) をインストールします。インストール後は `http://localhost:11434` で待ち受けます。
 
-#### Windows
-1. https://ollama.com/download からOllamaをダウンロード
-2. インストーラーを実行してインストール
-3. Ollamaが自動的に起動します
+Linux / Mac の場合は次でも入れられます。
 
-#### Linux/Mac
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-### 2. 必要なモデルのダウンロード
+## 2. モデルの取得
 
-#### LLMモデル（チャット用）
-```bash
-# 推奨: llama3.2（軽量で高性能）
-ollama pull llama3.2
-
-# または、より大きなモデル（より高性能だが重い）
-ollama pull llama3.1
-ollama pull mistral
-```
-
-#### 埋め込みモデル（ベクトル検索用）
-```bash
-# 推奨: nomic-embed-text（軽量で高性能）
-ollama pull nomic-embed-text
-
-# または、より大きな埋め込みモデル
-ollama pull mxbai-embed-large
-```
-
-### 3. 環境変数の設定
-
-ローカルLLMを使用するように環境変数を設定します。
-
-#### Windows (PowerShell)
 ```powershell
-$env:USE_LOCAL_LLM="true"
-$env:OLLAMA_BASE_URL="http://localhost:11434"
-$env:OLLAMA_MODEL="llama3.2"
-$env:OLLAMA_EMBEDDING_MODEL="nomic-embed-text"
-```
-
-#### Windows (コマンドプロンプト)
-```cmd
-set USE_LOCAL_LLM=true
-set OLLAMA_BASE_URL=http://localhost:11434
-set OLLAMA_MODEL=llama3.2
-set OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-```
-
-#### Linux/Mac
-```bash
-export USE_LOCAL_LLM=true
-export OLLAMA_BASE_URL=http://localhost:11434
-export OLLAMA_MODEL=llama3.2
-export OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-```
-
-#### .envファイルを使用する場合（推奨）
-
-プロジェクトルートに`.env`ファイルを作成：
-
-```
-USE_LOCAL_LLM=true
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-```
-
-`.env`ファイルを使用する場合は、`dotenv`パッケージをインストール：
-
-```bash
-npm install dotenv
-```
-
-`server.js`の先頭に以下を追加：
-
-```javascript
-require('dotenv').config();
-```
-
-### 4. 依存関係のインストール
-
-```bash
-npm install
-```
-
-以下のパッケージが追加されます：
-- `@langchain/ollama`: Ollamaとの統合
-
-### 5. Ollamaの起動確認
-
-Ollamaが起動しているか確認：
-
-```bash
+ollama pull hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest
+ollama pull bge-m3
 ollama list
 ```
 
-モデルが表示されれば正常です。
+`ollama list` に 2 つのモデルが表示されれば完了です。
 
-### 6. サーバーの起動
+## 3. 環境変数（任意）
 
-```bash
-node server.js
+既定のままなら設定は不要です。プロジェクトは `.env` を読み込まないため、変更する場合は `npm start` と同じシェルで設定します。
+
+```powershell
+$env:OLLAMA_MODEL = "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest"
+$env:OLLAMA_EMBEDDING_MODEL = "bge-m3"
+npm start
 ```
 
-初回起動時、知識ベースが自動的に初期化されます。これには数分かかる場合があります。
+| 変数 | 意味 | 未設定のとき |
+|------|------|--------------|
+| `OLLAMA_BASE_URL` | Ollama の URL | `http://localhost:11434` |
+| `OLLAMA_MODEL` | チャットモデル | `hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest` |
+| `OLLAMA_EMBEDDING_MODEL` | 埋め込みモデル | `bge-m3` |
+| `OLLAMA_EMBEDDING_NUM_GPU` | 埋め込みに使う GPU レイヤー数 | `0`（埋め込みは CPU で計算） |
+| `CHROMA_URL` | ChromaDB の URL | `http://localhost:8000` |
 
-### 7. AIチューターへのアクセス
+埋め込みを CPU で動かすのは、GPU をチャットモデル専用にして、モデルの入れ替えが起きないようにするためです。GPU に余裕があれば `OLLAMA_EMBEDDING_NUM_GPU` を設定して GPU を使えます。
 
-ブラウザで以下のURLにアクセス：
+## 4. 起動と確認
 
+```powershell
+npm start
 ```
-http://localhost:3333/tutor
+
+チューターが初期化されると、サーバーのログに次の行が出ます。
+
+```text
+✅ ローカルLLM（Ollama）を初期化しました: hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest at http://localhost:11434
 ```
 
-ステータスバーに「準備完了 (ローカルLLM: llama3.2, 知識ベース: XX件)」と表示されれば正常です。
+ログインして `http://localhost:3333/tutor` を開き、画面上部のステータスが次のようになれば準備完了です。
 
-## 環境変数の説明
+```text
+準備完了 (ローカルLLM: hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest, 知識ベース: XX件)
+```
 
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `USE_LOCAL_LLM` | ローカルLLMを使用するかどうか | `false` |
-| `OLLAMA_BASE_URL` | OllamaのベースURL | `http://localhost:11434` |
-| `OLLAMA_MODEL` | 使用するLLMモデル名 | `llama3.2` |
-| `OLLAMA_EMBEDDING_MODEL` | 使用する埋め込みモデル名 | `nomic-embed-text` |
+## チャットモデルの生成設定
+
+`src/services/tutorService.js` の `initialize()` で固定しています。変える場合はこのコードを編集します。
+
+| 設定 | 値 | 意味 |
+|------|----|------|
+| `temperature` | 0.2 | 回答のばらつきを抑える |
+| `numPredict` | 1024 | 1 回の回答の最大トークン数 |
+| `numCtx` | 4096 | コンテキスト長 |
+| `numGpu` | 999 | 可能な限り GPU に載せる |
+| `repeatPenalty` | 1.15 | 同じ語句の繰り返しを抑える |
+
+## モデルを変える場合
+
+- チャットモデル：`ollama pull <モデル名>` のあと `OLLAMA_MODEL` を設定して再起動します。知識ベースの作り直しは不要です。
+- 埋め込みモデル：`OLLAMA_EMBEDDING_MODEL` を変えたら、知識ベースを作り直します（`/tutor/rebuild`）。既存の索引は前のモデルで作られているため、そのままでは検索が合いません。
 
 ## トラブルシューティング
 
-### Ollamaが起動していない
+### ステータスが「⚠️ Ollamaが起動していません」
 
-**症状:** ステータスバーに「⚠️ Ollamaが起動していません」と表示される
+Ollama に接続できていません。`ollama list` が動くか確認し、動かなければ Ollama を起動します（Windows はスタートメニューから、Linux / Mac は `ollama serve`）。URL を変えている場合は `OLLAMA_BASE_URL` も確認します。
 
-**解決方法:**
-1. Ollamaが起動しているか確認: `ollama list`
-2. Ollamaを起動: Windowsの場合はスタートメニューから、Linux/Macの場合は `ollama serve`
+### 回答時にモデルが見つからないエラーになる
 
-### モデルが見つからない
-
-**症状:** 「モデルが見つかりません」というエラー
-
-**解決方法:**
-1. モデルがダウンロードされているか確認: `ollama list`
-2. モデルをダウンロード: `ollama pull llama3.2`
+`ollama list` に `OLLAMA_MODEL`（未設定なら ELYZA）と同じ名前のモデルがあるか確認し、なければ `ollama pull` します。
 
 ### 知識ベースの初期化に失敗する
 
-**症状:** 「埋め込みモデルの初期化に失敗しました」というエラー
+`ollama list` に埋め込みモデル（`OLLAMA_EMBEDDING_MODEL`、未設定なら `bge-m3`）があるか確認し、なければエラーメッセージに出るコマンドで pull します。
 
-**解決方法:**
-1. 埋め込みモデルがダウンロードされているか確認: `ollama list`
-2. 埋め込みモデルをダウンロード: `ollama pull nomic-embed-text`
-3. `OLLAMA_EMBEDDING_MODEL`環境変数が正しく設定されているか確認
+### 応答が遅い、またはメモリが足りない
 
-### 応答が遅い
+- 他のアプリを閉じてメモリと GPU を空ける
+- 軽いモデル（例：`llama3.2`）を pull して `OLLAMA_MODEL` に設定する。ただし日本語の回答品質は下がる可能性がある
 
-**原因:**
-- モデルが大きい
-- システムリソース（CPU/メモリ）が不足している
-
-**解決方法:**
-1. より軽量なモデルを使用（例: `llama3.2` → `llama3.2:1b`）
-2. システムリソースを確認
-3. 他のアプリケーションを閉じる
-
-### メモリ不足
-
-**症状:** Ollamaがクラッシュする、または応答が生成されない
-
-**解決方法:**
-1. より軽量なモデルを使用
-2. システムのメモリを増やす
-3. 他のアプリケーションを閉じる
-
-## OpenAI APIとの切り替え
-
-OpenAI APIを使用する場合は、`USE_LOCAL_LLM`を`false`に設定（または未設定）し、`OPENAI_API_KEY`を設定してください。
-
-```bash
-# OpenAI APIを使用
-export USE_LOCAL_LLM=false
-export OPENAI_API_KEY=your-api-key-here
-```
-
-## 推奨モデル
-
-### LLMモデル（チャット用）
-
-| モデル | サイズ | 推奨用途 |
-|--------|--------|----------|
-| `llama3.2:1b` | 1B | 軽量、高速、低リソース |
-| `llama3.2` | 3B | バランス型（推奨） |
-| `llama3.1:8b` | 8B | 高品質、高リソース |
-| `mistral` | 7B | 高品質、多言語対応 |
-
-### 埋め込みモデル（ベクトル検索用）
-
-| モデル | サイズ | 推奨用途 |
-|--------|--------|----------|
-| `nomic-embed-text` | 137M | 軽量、高速（推奨） |
-| `mxbai-embed-large` | 335M | 高精度、高リソース |
-
-## パフォーマンスの最適化
-
-### GPUを使用する場合
-
-Ollamaは自動的にGPUを検出して使用します。NVIDIA GPUを使用している場合、CUDAがインストールされている必要があります。
-
-### CPUのみの場合
-
-CPUのみで実行する場合、軽量なモデルを使用することを推奨します：
-- LLM: `llama3.2:1b` または `llama3.2`
-- 埋め込み: `nomic-embed-text`
-
-## セキュリティに関する注意
-
-- ローカルLLMは完全にローカルで実行されるため、データが外部に送信されることはありません
-- Ollamaはデフォルトで`localhost:11434`でリッスンします
-- 本番環境で使用する場合は、適切なファイアウォール設定を行ってください
-
-
-
-
-
+チューターの回答生成は 1 件ずつ順番に処理されます。複数人が同時に質問すると、後の人は待ち行列で順番を待ちます。

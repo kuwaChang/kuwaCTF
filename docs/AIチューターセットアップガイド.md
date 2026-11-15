@@ -1,155 +1,86 @@
 # AIチューターセットアップガイド
 
-RAG（Retrieval-Augmented Generation）ベースのAIチューター機能のセットアップ方法を説明します。
+AI チューターの機能、知識ベース、API、カスタマイズ方法をまとめます。インストールと起動の手順は [AIチューター完全ローカルセットアップガイド](./AIチューター完全ローカルセットアップガイド.md)、モデルと環境変数は [ローカルLLMセットアップガイド](./ローカルLLMセットアップガイド.md) を参照してください。
 
 ## 概要
 
-AIチューターは、CTFの問題を解く際に、学習者に対してヒントや考え方を提供する機能です。直接的な答えは教えず、段階的なヒントを提供することで、学習者の理解を深めます。
+AI チューターは、問題を解いている学習者に、答えそのものではなく考え方や段階的なヒントを返す機能です。RAG（検索拡張生成）の構成で、次の 3 つを組み合わせて回答します。
 
-**このシステムはデフォルトで完全ローカル（Ollama）で動作します。** OpenAI APIは使用しません。
+- `content/knowledge/` から検索した知識（ChromaDB）
+- 学習者が開いている問題の情報と、その問題のヒント集
+- 直近の会話履歴
 
-## 必要な環境
+生成は Ollama のローカルモデル（既定は `hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest`）で行い、外部の API は使いません。
 
-- Node.js (v16以上推奨)
-- **Ollama（ローカルLLM実行環境）**
+## 機能
 
-> 💡 **完全ローカルセットアップ**: 詳細は[完全ローカルセットアップガイド](./AIチューター完全ローカルセットアップガイド.md)を参照してください。
-> 
-> 💡 **OpenAI APIを使用する場合（オプション）**: `USE_OPENAI=true` と `OPENAI_API_KEY` を設定することで、OpenAI APIを使用することもできます。
+| 機能 | 内容 |
+|------|------|
+| 質問 | `/tutor` で質問を送ると、回答がストリーミングで表示される |
+| 問題からの連携 | 問題のモーダルの「AIチューター」ボタンで `/tutor?category=<カテゴリー>&questionId=<問題ID>` が開き、その問題を踏まえて回答する |
+| 問題別ヒント | 開いている問題のヒント集の節を、会話が進むごとに浅いものから一段ずつ使う |
+| 会話履歴 | ユーザーごとにサーバーのメモリで直近 20 件を保持する。サーバーを再起動すると消える |
+| 順番待ち | 回答生成は 1 件ずつ。待っている人には順番が表示される |
+| Q&A ログ | 質問と回答を `storage/tutor_qa_pending.jsonl` に記録し、知識ベースを作り直すときに `docs/tutor-qa-<日時>.json` に書き出す |
 
-## セットアップ手順
+回答には次の後処理がかかります（`src/services/tutorService.js` の `finalizeAnswer`）。
 
-### 1. 依存関係のインストール
-
-```bash
-npm install
-```
-
-以下のパッケージが追加されます：
-- `@langchain/openai`: OpenAI APIとの統合
-- `@langchain/community`: LangChainコミュニティ機能
-- `@langchain/ollama`: Ollama（ローカルLLM）との統合
-- `langchain`: LangChainコアライブラリ
-- `chromadb`: ベクトルデータベース
-
-### 2. LLMの設定
-
-**デフォルトではローカルLLM（Ollama）が使用されます。環境変数の設定は不要です。**
-
-#### オプションA: ローカルLLMを使用（デフォルト・推奨）
-
-環境変数の設定は不要です。Ollamaをインストールしてモデルをダウンロードするだけで使用できます。
-
-詳細なセットアップ手順は[完全ローカルセットアップガイド](./AIチューター完全ローカルセットアップガイド.md)を参照してください。
-
-#### オプションB: OpenAI APIを使用（オプション）
-
-OpenAI APIを使用する場合は、以下の環境変数を設定します。
-
-環境変数にOpenAI APIキーを設定します。
-
-#### Windows (PowerShell)
-```powershell
-$env:OPENAI_API_KEY="your-api-key-here"
-```
-
-#### Windows (コマンドプロンプト)
-```cmd
-set OPENAI_API_KEY=your-api-key-here
-```
-
-#### Linux/Mac
-```bash
-export OPENAI_API_KEY="your-api-key-here"
-```
-
-#### .envファイルを使用する場合（推奨）
-
-プロジェクトルートに`.env`ファイルを作成し、以下の内容を記述：
-
-```
-OPENAI_API_KEY=your-api-key-here
-```
-
-`.env`ファイルを使用する場合は、`dotenv`パッケージをインストールして読み込む必要があります：
-
-```bash
-npm install dotenv
-```
-
-`server.js`の先頭に以下を追加：
-
-```javascript
-require('dotenv').config();
-```
-
-
-### 3. サーバーの起動
-
-```bash
-node server.js
-```
-
-初回起動時、知識ベースが自動的に初期化されます。これには数分かかる場合があります。
-
-### 4. AIチューターへのアクセス
-
-ブラウザで以下のURLにアクセス：
-
-```
-http://localhost:3333/tutor
-```
-
-## 機能説明
-
-### 基本的な使い方
-
-1. **質問を入力**: チャット画面のテキストエリアに質問を入力
-2. **送信**: 「送信」ボタンをクリック、またはEnterキーを押す
-3. **回答を確認**: AIチューターからの回答と参考資料を確認
-
-### クイックアクション
-
-以下のボタンからよく使う質問を素早く送信できます：
-
-- 💡 **解き方を聞く**: 問題の解き方について質問
-- 🛠️ **ツールを聞く**: 使用すべきツールについて質問
-- 📚 **基礎知識を聞く**: カテゴリーの基礎知識について質問
-
-### 問題ページからの連携
-
-問題ページからAIチューターにアクセスする場合、URLパラメータで問題情報を渡せます：
-
-```
-http://localhost:3333/tutor?category=Easy1&questionId=beginner1
-```
-
-この場合、AIチューターは現在取り組んでいる問題の情報を考慮して回答します。
-
-### 会話履歴
-
-- 会話履歴は最新20件まで保持されます
-- 「会話履歴をクリア」ボタンで履歴をリセットできます
+- フラグ文字列を伏せる
+- 参照資料にない URL を取り除く
+- 指示文のオウム返し、決まり文句の書き出し、同じ文の繰り返しを取り除く
+- 英語の拒否応答を日本語にする
+- 6,000 文字を超える回答は切り詰める
 
 ## 知識ベース
 
-知識ベースは以下のカテゴリーで構成されています：
+`content/knowledge/` の Markdown が知識ベースです。
 
-- **crypto.md**: 暗号学の基礎知識（ROT13、Base64、モールス信号など）
-- **web.md**: Webセキュリティの基礎知識（SQLインジェクション、XSSなど）
-- **forensics.md**: フォレンジックの基礎知識（ファイル検索、メタデータなど）
-- **osint.md**: OSINTの基礎知識（画像検索、座標特定など）
-- **general.md**: CTF一般知識
+| ファイル | 内容 | 使われ方 |
+|----------|------|----------|
+| `crypto.md` | 暗号 | 検索 |
+| `forensics.md` | フォレンジック | 検索 |
+| `web.md` | Web セキュリティ | 検索 |
+| `osint.md` | OSINT | 検索 |
+| `steganography.md` | ステガノグラフィ | 検索 |
+| `reversing_pwn.md` | リバースエンジニアリング・Pwn | 検索 |
+| `sad_server.md` | Sad Server シナリオ（Linux 端末課題） | 検索 |
+| `tools_and_commands.md` | CTF ツールとコマンド | 検索 |
+| `learning_sites_and_terms.md` | 学習サイトと用語 | 検索 |
+| `meta.md` | CTF の進め方 | 検索 |
+| `easy1.md`〜`hard2.md`（6 ファイル） | ストーリー問題の問題別ヒント集 | その問題を開いているときだけ使う |
 
-知識ベースは`data/knowledge/`ディレクトリに保存されています。
+検索用のファイルは、見出しごとに分けて Chroma に登録されます。検索結果の `category` にはファイル名（拡張子なし）が入ります。次の名前の節は、LLM への指示用なので索引に入れません。
 
-## APIエンドポイント
+- ローカルLLM回答方針
+- 安全な回答方針
+- 情報開示の注意
+
+### 知識を追加・修正する
+
+1. `content/knowledge/` に Markdown を追加するか、既存のファイルを編集する
+2. ログインして `/tutor/rebuild` を開き、索引を作り直す
+
+作り直さないと既存の索引がそのまま使われ、変更は反映されません。
+
+問題別ヒント集を追加する場合は、カテゴリー名を小文字にしたファイル名（`Easy1` → `easy1.md`）にし、問題ごとに `## <問題ID>` の節を作ります。対象はファイル名が `easy`・`medium`・`hard` + 数字のものだけです。
+
+## API
+
+すべてログインが必要です（未ログインは 401）。
+
+| メソッド | パス | 内容 |
+|----------|------|------|
+| POST | `/tutor/ask` | 質問に答える（回答をまとめて返す） |
+| POST | `/tutor/ask/stream` | 質問に答える（NDJSON でストリーミング） |
+| POST | `/tutor/hint` | 指定した問題のヒントを返す |
+| POST | `/tutor/clear` | 自分の会話履歴を消す |
+| GET / POST | `/tutor/rebuild` | 知識ベースを作り直し、Q&A ログを書き出す |
+| GET | `/tutor/status` | Ollama と知識ベースの状態を返す |
 
 ### POST /tutor/ask
 
-質問に答えるエンドポイント。
+リクエスト（`category` と `questionId` は任意。指定するとその問題を踏まえて回答する）：
 
-**リクエスト:**
 ```json
 {
   "question": "ROT13暗号の解き方を教えてください",
@@ -158,122 +89,80 @@ http://localhost:3333/tutor?category=Easy1&questionId=beginner1
 }
 ```
 
-**レスポンス:**
+レスポンス：
+
 ```json
 {
   "answer": "ROT13は...",
   "sources": [
-    {
-      "category": "crypto",
-      "source": "crypto.md",
-      "relevance": "0.95"
-    }
+    { "category": "crypto", "source": "crypto.md", "relevance": "0.62" }
   ]
 }
 ```
 
+`relevance` は 1 − 距離を小数 2 桁の文字列にしたものです。`question` が空なら 400 を返します。
+
+### POST /tutor/ask/stream
+
+リクエストは `/tutor/ask` と同じです。レスポンスは `application/x-ndjson` で、1 行に 1 つの JSON を次の順で送ります。
+
+| `type` | 中身 | 意味 |
+|--------|------|------|
+| `queue` | `position`、`status`（`waiting` / `generating`） | 待ち順。自分の番になると `position: 1, status: "generating"` |
+| `sources` | `sources` | 回答に使った検索結果 |
+| `chunk` | `text` | 生成中の回答の断片 |
+| `done` | `answer` | 後処理を済ませた最終回答 |
+| `error` | `answer`、`sources`、`error` | エラー |
+
+画面は `chunk` を順に表示し、`done` の `answer` で置き換えます。
+
 ### POST /tutor/hint
 
-問題のヒントを取得するエンドポイント。
+リクエスト：
 
-**リクエスト:**
 ```json
-{
-  "category": "Easy1",
-  "questionId": "beginner1"
-}
+{ "category": "Easy1", "questionId": "beginner1" }
 ```
 
-### POST /tutor/clear
-
-会話履歴をクリアするエンドポイント。
+レスポンスは `/tutor/ask` と同じ形です。`category` か `questionId` がなければ 400 を返します。
 
 ### GET /tutor/status
 
-AIチューターのステータスを確認するエンドポイント。
+レスポンス：
 
-**レスポンス:**
 ```json
 {
-  "apiKeySet": true,
+  "llmReady": true,
+  "embeddingReady": true,
   "knowledgeBaseInitialized": true,
-  "knowledgeBaseCount": 25,
-  "ready": true
+  "knowledgeBaseCount": 120,
+  "ready": true,
+  "ollamaBaseUrl": "http://localhost:11434",
+  "ollamaModel": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest"
 }
 ```
 
-### POST /tutor/rebuild
-
-知識ベースを再構築するエンドポイント（管理者用）。
-
-## トラブルシューティング
-
-### APIキーが設定されていない
-
-**症状:** ステータスバーに「⚠️ OPENAI_API_KEYが設定されていません」と表示される
-
-**解決方法:**
-1. 環境変数`OPENAI_API_KEY`が正しく設定されているか確認
-2. サーバーを再起動
-
-### 知識ベースが初期化されない
-
-**症状:** ステータスバーに「知識ベースを初期化中...」と表示され続ける
-
-**解決方法:**
-1. `db/chroma`ディレクトリの権限を確認
-2. サーバーログでエラーメッセージを確認
-3. `/tutor/rebuild`エンドポイントで再構築を試す
-
-### 回答が生成されない
-
-**症状:** 質問を送信しても回答が返ってこない
-
-**解決方法:**
-1. ブラウザの開発者ツール（F12）でエラーを確認
-2. サーバーログでエラーメッセージを確認
-3. OpenAI APIキーが有効か確認
-4. APIの使用制限に達していないか確認
-
-### ChromaDBのエラー
-
-**症状:** ChromaDB関連のエラーが発生する
-
-**解決方法:**
-1. `db/chroma`ディレクトリを削除して再初期化
-2. ChromaDBのバージョンを確認: `npm list chromadb`
+`ready` は `llmReady`・`embeddingReady`・`knowledgeBaseInitialized` がすべて true のときに true です。最初の呼び出しで知識ベースの構築が始まります。
 
 ## カスタマイズ
 
-### 知識ベースの追加
+| 変えたいもの | 場所 |
+|--------------|------|
+| 回答の口調や方針（システムプロンプト） | `src/services/tutorService.js` の `_buildMessagesAndDocs` 内の `systemPrompt` |
+| 生成設定（temperature など） | `src/services/tutorService.js` の `initialize` |
+| チャットモデル・埋め込みモデル | 環境変数 `OLLAMA_MODEL`・`OLLAMA_EMBEDDING_MODEL` |
+| 検索件数（既定 5 件） | `src/services/tutorService.js` の `vectorStore.search(searchQuery, 5)` |
+| 分割サイズ（400 文字、重なり 40 文字） | `src/services/vectorStore.js` の `loadKnowledgeBase` |
+| 回答の後処理 | `src/services/tutorService.js` の `finalizeAnswer` |
 
-`data/knowledge/`ディレクトリにMarkdownファイルを追加すると、自動的に知識ベースに含まれます。
+分割の方法や埋め込みモデルを変えたら、`/tutor/rebuild` で知識ベースを作り直してください。
 
-### プロンプトの変更
+## 注意
 
-`services/tutorService.js`の`answerQuestion`メソッド内の`systemPrompt`を編集することで、AIチューターの回答スタイルを変更できます。
+- `/tutor/rebuild` は管理者に限定されておらず、ログインしていれば誰でも実行できる
+- 会話履歴はメモリにしか保存されないため、サーバーの再起動で消える
+- Q&A ログには学習者の質問がそのまま残る。`docs/` に書き出したファイルの扱いに注意する
 
-### モデルの変更
+## トラブルシューティング
 
-`services/tutorService.js`の`initialize`メソッドで、使用するGPTモデルを変更できます：
-
-```javascript
-this.llm = new ChatOpenAI({
-  openAIApiKey: apiKey,
-  modelName: "gpt-4o", // または "gpt-3.5-turbo"
-  temperature: 0.7,
-  maxTokens: 1000
-});
-```
-
-## セキュリティに関する注意
-
-- OpenAI APIキーは環境変数で管理し、コードに直接記述しないでください
-- `.env`ファイルを`.gitignore`に追加してください
-- 本番環境では、APIキーの漏洩に注意してください
-
-## ライセンス
-
-この機能は、CTF学習プラットフォームの一部として提供されています。
-
-
+[AIチューター完全ローカルセットアップガイド](./AIチューター完全ローカルセットアップガイド.md) のトラブルシューティングを参照してください。
