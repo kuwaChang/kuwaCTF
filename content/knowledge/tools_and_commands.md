@@ -46,3 +46,46 @@
 | ltrace | (LinuxまたはWSL) | ライブラリ関数呼び出し | `ltrace ./chall` |
 | strace | (LinuxまたはWSL) | システムコール確認 | `strace ./chall` |
 | objdump | (LinuxまたはWSL) | 逆アセンブル | `objdump -d chall`。`-d` は実行部分を逆アセンブルする |
+
+## よく聞かれる使い方の補足
+
+### grep で複数のキーワードを探す
+- `grep -e flag -e key file.txt`（(LinuxまたはWSL)。`-e` は検索語を1つずつ指定し、どれかを含む行を出す）
+- `grep -E "flag|key" file.txt`（`-E` は拡張正規表現。`|` で「または」を表す）
+- Windows では `findstr "flag key" file.txt`（スペース区切りの語のどれかを含む行を出す）
+
+### フォルダの中を再帰的に文字列検索する
+- `grep -rn "flag" .`（(LinuxまたはWSL)。`-r` はサブフォルダも検索、`-n` は行番号を表示）
+- `find` はファイル名や種類で探すコマンドで、ファイルの中身は検索しない
+- Windows では `findstr /S /N "flag" *`（`/S` はサブフォルダも検索、`/N` は行番号）
+
+### strings と xxd の違い
+- `strings` は、ファイルの中から人が読める文字列だけを抜き出す
+- `xxd` は、ファイルの中身をすべて16進数で表示する（文字列の抽出はしない）。マジックナンバーの確認や書き換え位置の確認に使う
+
+### Windows で strings を使う
+- Microsoft の Sysinternals に `strings.exe` がある。例: `strings.exe -n 6 target`（`-n 6` は6文字以上の文字列だけ出す）
+- WSL を入れれば Linux の `strings` もそのまま使える
+- PowerShell の `Format-Hex` は16進表示で、文字列抽出ではない
+
+### exiftool で特定のタグだけ出す
+- `exiftool -GPSLatitude -GPSLongitude image.jpg`（`-タグ名` で指定したタグだけ出す）
+- `exiftool -s image.jpg`（`-s` は説明文ではなくタグ名で表示する。指定したいタグ名を調べるときに使う）
+
+### Windows で隠しファイルを表示する
+- Windows 11: エクスプローラーの「表示」→「表示」→「隠しファイル」にチェック
+- Windows 10: エクスプローラーの「表示」タブ →「隠しファイル」にチェック
+- コマンドプロンプトでは `dir /a`（`/a` は隠しファイルも含めて表示）
+
+### Windows でファイルのプロパティ（メタ情報）を見る
+- ファイルを右クリック →「プロパティ」→「詳細」タブ。作成者、撮影日時、カメラ機種などが見える
+
+### curl と wget の違い
+- `wget` はファイルのダウンロード向け。`wget -r` でリンクをたどってまとめて取得できる
+- `curl` はリクエストを細かく指定するのに向く。`-X` でメソッド、`-H` でヘッダー、`-d` で送信データを指定し、結果は画面に出る
+
+### hashcat と John the Ripper の違い
+- どちらも、許可されたハッシュ（CTFの配布物など）の元のパスワードを探すツール
+- hashcat は GPU を使って高速に試すのが得意。ハッシュの種類を `-m` で番号指定する
+- John the Ripper は CPU 中心で、ハッシュの種類を自動判別しやすい。`pdf2john` や `zip2john` など、ファイルから解析用ハッシュを取り出す補助スクリプトが付属する
+- `pdf2john` は John the Ripper（jumbo版）の `run` フォルダに入っている。pip でインストールするものではない

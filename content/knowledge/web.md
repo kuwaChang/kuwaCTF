@@ -294,6 +294,7 @@ element.textContent = userInput;
 ## CSRF
 
 CSRFは、ログイン済みユーザーのブラウザに意図しないリクエストを送らせる攻撃である。
+Cross-Site Request Forgery の略。名前の似たSSRF（サーバーに外部や内部へリクエストを送らせる脆弱性）とは別物。
 
 成立しやすい条件:
 
@@ -316,7 +317,13 @@ CSRFは、ログイン済みユーザーのブラウザに意図しないリク�
 ## SSRF
 
 SSRFは、サーバーに任意のURLへアクセスさせる脆弱性である。  
-Server-Side Request Forgery の略。
+Server-Side Request Forgery の略。名前の似たCSRF（利用者のブラウザにリクエストを送らせる攻撃）とは別物で、Cookieやログイン状態は関係しない。
+
+成立する条件:
+
+- 利用者が指定したURLに、サーバーがアクセスする機能がある
+- アクセス先のホストやIPアドレスを制限していない
+- サーバーからは内部ネットワークやlocalhostに届く
 
 発生しやすい機能:
 

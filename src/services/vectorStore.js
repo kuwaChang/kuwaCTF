@@ -6,6 +6,19 @@ const path = require("path");
 const DEFAULT_OLLAMA_EMBEDDING_MODEL = "bge-m3";
 
 /**
+ * 問題ごとのヒント集（easy1.md 〜 hard2.md）。
+ * 一般知識と一緒に検索すると無関係な質問に問題のヒントが混ざるため、ベクトル検索には載せない。
+ * 学習者がその問題を開いているときだけ getProblemHint() で該当の節を直接読む。
+ */
+const PROBLEM_HINT_FILE_RE = /^(easy|medium|hard)\d+\.md$/i;
+
+/**
+ * 知識ベースの中身や分割方法を変えたら上げる。
+ * コレクション名が変わるので、次回起動時に自動で作り直される。
+ */
+const KNOWLEDGE_INDEX_VERSION = 3;
+
+/**
  * 見出し境界で区切り、1チャンクが次の見出しに入り込まないようにする。
  * 節が chunkSize を超えるときだけ、その節の本文を改行・空白で再分割する。
  */
@@ -133,7 +146,7 @@ class VectorStoreService {
       console.warn("⚠️ ChromaDBの初期化に失敗しましたが、サーバーは起動を続行します。");
       this.client = null;
     }
-    this.collectionName = "ctf_knowledge";
+    this.collectionName = `ctf_knowledge_v${KNOWLEDGE_INDEX_VERSION}`;
     this.embeddings = null;
     this.collection = null;
     this.initialized = false;
@@ -159,6 +172,9 @@ class VectorStoreService {
       this.embeddings = new OllamaEmbeddings({
         baseUrl: ollamaBaseUrl,
         model: ollamaEmbeddingModel,
+        // 埋め込みはCPUで動かし、GPUはチャットモデル専用にする（モデルの入れ替えを防ぐ）
+        // OLLAMA_EMBEDDING_NUM_GPU を設定すれば従来どおりGPUも使える
+        requestOptions: { numGpu: parseInt(process.env.OLLAMA_EMBEDDING_NUM_GPU || "0", 10) },
       });
       this.embeddingType = "ollama";
       console.log(`✅ ローカル埋め込みモデル（Ollama）を初期化しました: ${ollamaEmbeddingModel} at ${ollamaBaseUrl}`);
@@ -191,11 +207,14 @@ class VectorStoreService {
     }
 
     if (!this.embeddings) {
-      throw new Error("ローカル埋め込みモデル（Ollama）の初期化に失敗しました。Ollamaが起動しているか確認してください。\n\n解決方法:\n1. Ollamaが起動しているか確認: `ollama list`\n2. 埋め込みモデルをダウンロード: `ollama pull nomic-embed-text`\n3. Ollamaのインストール: https://ollama.com/download");
+      const embeddingModel = process.env.OLLAMA_EMBEDDING_MODEL || DEFAULT_OLLAMA_EMBEDDING_MODEL;
+      throw new Error(`ローカル埋め込みモデル（Ollama）の初期化に失敗しました。Ollamaが起動しているか確認してください。\n\n解決方法:\n1. Ollamaが起動しているか確認: \`ollama list\`\n2. 埋め込みモデルをダウンロード: \`ollama pull ${embeddingModel}\`\n3. Ollamaのインストール: https://ollama.com/download`);
     }
 
     const knowledgeDir = path.join(paths.CONTENT, "knowledge");
-    const files = fs.readdirSync(knowledgeDir).filter(f => f.endsWith(".md"));
+    const files = fs
+      .readdirSync(knowledgeDir)
+      .filter((f) => f.endsWith(".md") && !PROBLEM_HINT_FILE_RE.test(f));
 
     // 既存のデータを確認
     const existingCount = await this.collection.count();
@@ -277,6 +296,29 @@ class VectorStoreService {
       console.error("❌ 検索エラー:", error);
       throw error;
     }
+  }
+
+  /**
+   * 開いている問題のヒント節を返す（例: category="Easy1", questionId="beginner2"）。
+   * 該当するヒント集や節が無ければ空文字。
+   */
+  getProblemHint(category, questionId) {
+    if (!category || !questionId) return "";
+    const file = `${String(category).toLowerCase()}.md`;
+    if (!PROBLEM_HINT_FILE_RE.test(file)) return "";
+    const filePath = path.join(paths.CONTENT, "knowledge", file);
+    if (!fs.existsSync(filePath)) return "";
+
+    const lines = fs.readFileSync(filePath, "utf-8").split(/\r?\n/);
+    const id = String(questionId).toLowerCase();
+    const start = lines.findIndex((line) => {
+      const m = line.match(/^##\s+([A-Za-z0-9_-]+)/);
+      return m && m[1].toLowerCase() === id;
+    });
+    if (start === -1) return "";
+    let end = lines.findIndex((line, i) => i > start && /^#{1,2}\s/.test(line));
+    if (end === -1) end = lines.length;
+    return lines.slice(start + 1, end).join("\n").trim();
   }
 
   async clear() {
