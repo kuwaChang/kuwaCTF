@@ -334,39 +334,24 @@ io.on("connection", (socket) => {
 });
 
 // LAN内のみアクセス可能にするミドルウェア
+const { isAllowedIp, isAllowedHostname, describeAllowedNetworks } = require("./utils/allowedNetworks");
+{
+  const { extra, invalid } = describeAllowedNetworks();
+  console.log(
+    `🔒 アクセス許可: ループバック・プライベートIP${extra.length ? ` ＋ ${extra.join(", ")}（ALLOWED_NETWORKS）` : ""}`
+  );
+  if (invalid.length) {
+    console.warn(`⚠️ ALLOWED_NETWORKS の書式が不正なため無視しました: ${invalid.join(", ")}（例: 133.10.0.0/16）`);
+  }
+}
 function checkLanAccess(req, res, next) {
   const clientIp = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
   
   // IPv4アドレスを抽出（プロキシ経由の場合の処理）
   const ip = clientIp ? clientIp.split(',')[0].trim() : '';
-  
-  // プライベートIPアドレスの範囲をチェック
-  const isPrivateIP = (ip) => {
-    // localhost
-    if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') return true;
-    
-    // IPv4のプライベートIP範囲
-    const ipv4Match = ip.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-    if (ipv4Match) {
-      const [, a, b, c] = ipv4Match.map(Number);
-      // 10.0.0.0/8
-      if (a === 10) return true;
-      // 172.16.0.0/12
-      if (a === 172 && b >= 16 && b <= 31) return true;
-      // 192.168.0.0/16
-      if (a === 192 && b === 168) return true;
-    }
-    
-    // IPv6のリンクローカルアドレス
-    if (ip.startsWith('fe80::') || ip.startsWith('::ffff:10.') || 
-        ip.startsWith('::ffff:172.') || ip.startsWith('::ffff:192.168.')) {
-      return true;
-    }
-    
-    return false;
-  };
-  
-  if (!isPrivateIP(ip)) {
+
+  // 許可範囲はプライベートIP＋環境変数 ALLOWED_NETWORKS（src/utils/allowedNetworks.js）
+  if (!isAllowedIp(ip)) {
     console.log(`🚫 アクセス拒否: ${ip}`);
     return res.status(403).send('LAN内からのアクセスのみ許可されています');
   }
@@ -426,14 +411,8 @@ app.use(cors(
       const url = new URL(origin);
       const hostname = url.hostname;
       
-      // プライベートIPまたはlocalhostかチェック
-      const isPrivate = hostname === 'localhost' || 
-                       hostname === '127.0.0.1' ||
-                       hostname.startsWith('192.168.') ||
-                       hostname.startsWith('10.') ||
-                       /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
-      
-      if (isPrivate) {
+      // localhost、または許可範囲（プライベートIP＋ALLOWED_NETWORKS）のIPアドレスかチェック
+      if (isAllowedHostname(hostname)) {
         callback(null, true);
       } else {
         callback(new Error('CORS: LAN内からのアクセスのみ許可されています'));

@@ -134,6 +134,7 @@ chroma run --path ./storage/chroma
 |------|------|----------------|
 | `SESSION_SECRET` | セッション署名 | 起動のたびにランダム生成 |
 | `SERVER_HOST` | 問題文などに出すホスト名 | 自機の LAN IP |
+| `ALLOWED_NETWORKS` | 追加で許可する接続元のアドレス帯（CIDR、カンマ区切り）。学内の端末にグローバルIPが割り当てられているときに使う。例: `133.10.0.0/16` | ループバックとプライベートIP（10/8、172.16/12、192.168/16）のみ |
 | `OLLAMA_BASE_URL` | Ollama の URL | `http://localhost:11434` |
 | `OLLAMA_MODEL` | チューターのモデル | `elyza-jp:8b` |
 | `OLLAMA_EMBEDDING_MODEL` | 埋め込みモデル | `bge-m3` |
