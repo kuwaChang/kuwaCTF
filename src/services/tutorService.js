@@ -24,6 +24,9 @@ function modelNotFoundMessage(model) {
   return `申し訳ございません。AI先生のモデル（${model}）がOllamaに登録されていません。管理者の方は ${setup} を実行してください。`;
 }
 
+/** 環境変数 OLLAMA_THINK が 1 / true / on のときだけ思考モードを使う */
+const isThinkingEnabled = () => /^(1|true|on|yes)$/i.test(String(process.env.OLLAMA_THINK || "").trim());
+
 const isModelNotFoundError = (error) => /model\b.*not found|not found.*model/i.test(String(error?.message || ""));
 
 
@@ -257,8 +260,13 @@ class TutorService {
         numGpu: 999,
         // 同じ語句の繰り返し（反復ループ）を抑える。上げすぎると用語の言い換えが増えるので控えめに
         repeatPenalty: 1.15,
+        // Qwen3 などの思考モード。オンだと回答前に長く考えて遅くなるので既定はオフ。
+        // false は思考モードの無いモデル（ELYZA など）にも渡せる。true を渡すと非対応モデルはエラーになる
+        think: isThinkingEnabled(),
       });
-      console.log(`✅ ローカルLLM（Ollama）を初期化しました: ${ollamaModel} at ${ollamaBaseUrl}`);
+      console.log(
+        `✅ ローカルLLM（Ollama）を初期化しました: ${ollamaModel} at ${ollamaBaseUrl}（思考モード: ${isThinkingEnabled() ? "オン" : "オフ"}）`
+      );
       return true;
     } catch (error) {
       console.error("❌ Ollama初期化エラー:", error);

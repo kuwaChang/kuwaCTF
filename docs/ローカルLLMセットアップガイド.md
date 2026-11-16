@@ -51,6 +51,7 @@ npm start
 | `OLLAMA_BASE_URL` | Ollama の URL | `http://localhost:11434` |
 | `OLLAMA_MODEL` | チャットモデル | `elyza-jp:8b` |
 | `OLLAMA_EMBEDDING_MODEL` | 埋め込みモデル | `bge-m3` |
+| `OLLAMA_THINK` | 思考モード（Qwen3 など）。`1` でオン。オンだと遅くなり、ストリーミング中に考えている途中の文も画面に出るため、通常はオフのまま。思考モードの無いモデルでオンにするとエラーになる | オフ |
 | `OLLAMA_EMBEDDING_NUM_GPU` | 埋め込みに使う GPU レイヤー数 | `0`（埋め込みは CPU で計算） |
 | `CHROMA_URL` | ChromaDB の URL | `http://localhost:8000` |
 

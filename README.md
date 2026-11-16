@@ -137,6 +137,7 @@ chroma run --path ./storage/chroma
 | `OLLAMA_BASE_URL` | Ollama の URL | `http://localhost:11434` |
 | `OLLAMA_MODEL` | チューターのモデル | `elyza-jp:8b` |
 | `OLLAMA_EMBEDDING_MODEL` | 埋め込みモデル | `bge-m3` |
+| `OLLAMA_THINK` | 思考モード（Qwen3 など）。`1` でオン。オンだと遅くなり、ストリーミング中に考えている途中の文も画面に出るため、通常はオフのまま。思考モードの無いモデルでオンにするとエラーになる | オフ |
 | `CHROMA_URL` | ChromaDB の URL | `http://localhost:8000` |
 | `CODE_DOCKER_IMAGE_PYTHON` | Python 実行イメージ | `python:3.12-alpine` |
 | `CODE_DOCKER_IMAGE_C` | C 実行イメージ | `gcc:12-bookworm` |
