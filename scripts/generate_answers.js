@@ -16,6 +16,9 @@
 //   { "qid": 179, "category": "Hint", "quizCategory": "Crypto", "quizId": "crypto2",
 //     "turns": ["この問題のヒントください", "もう少し詳しく"] }   // 同じ会話で続けて質問
 
+// サーバーと同じく .env の設定（OLLAMA_MODEL など）を使う
+require("../src/config/env");
+
 const fs = require("fs");
 const path = require("path");
 

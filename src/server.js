@@ -1,3 +1,6 @@
+// .env の内容を環境変数に入れる。他のモジュールが環境変数を読む前に、必ず最初に読み込む
+require("./config/env");
+
 const express = require("express");
 const path = require("path");
 const sqlite3 = require("sqlite3").verbose();

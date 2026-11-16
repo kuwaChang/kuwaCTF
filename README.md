@@ -32,7 +32,7 @@ LAN 内で使う、CTF 形式のセキュリティ学習サーバーです。Nod
 
 ## 必要なもの
 
-- Node.js 20 LTS
+- Node.js 20 LTS（20.12 以降。`.env` の読み込みに使う）
 - npm
 - Docker Desktop（Sad Server とコード実行を使う場合）
 - Git
@@ -129,6 +129,15 @@ chroma run --path ./storage/chroma
 ## 環境変数（任意）
 
 未設定でも起動します。`SESSION_SECRET` を固定しない場合、再起動のたびにログインが切れます。
+
+設定は、プロジェクト直下の `.env` ファイルに書くのが簡単です。見本の `.env.example` をコピーし、使う行の先頭の `#` を外して値を書きます。`.env` は Git に含めないので、PC ごとに作ります。
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
+
+PowerShell の `$env:` や `setx` で設定した値があれば、`.env` よりそちらが優先されます。値を変えたら、サーバーを起動し直します。
 
 | 変数 | 意味 | 未設定のとき |
 |------|------|----------------|
