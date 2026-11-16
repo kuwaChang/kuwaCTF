@@ -8,7 +8,7 @@ AI チューターが使う Ollama のモデルと、その設定方法をまと
 
 | 用途 | 既定のモデル | 変更する環境変数 |
 |------|--------------|------------------|
-| チャット（回答生成） | `hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest` | `OLLAMA_MODEL` |
+| チャット（回答生成） | `elyza-jp:8b` | `OLLAMA_MODEL` |
 | 埋め込み（知識ベース検索） | `bge-m3` | `OLLAMA_EMBEDDING_MODEL` |
 
 既定値は `src/services/tutorService.js` と `src/services/vectorStore.js` に書かれています。
@@ -27,18 +27,21 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 ```powershell
 ollama pull hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest
+ollama create elyza-jp:8b -f config/ollama/Modelfile.elyza
 ollama pull bge-m3
 ollama list
 ```
 
-`ollama list` に 2 つのモデルが表示されれば完了です。
+`ollama list` に `hf.co/elyza/...`、`elyza-jp:8b`、`bge-m3` の 3 つが表示されれば完了です。
+
+`ollama create` は、ELYZA を正しいチャットテンプレート（Llama 3 形式）で登録し直す手順です。Hugging Face から pull しただけのモデルはテンプレートが ChatML 形式になっていて、回答が途中で止まったり、指示文が回答に写ったりしやすくなります。モデル本体は使い回すので、追加のダウンロードはありません。元のモデルに戻すときは `OLLAMA_MODEL` に `hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest` を指定します。
 
 ## 3. 環境変数（任意）
 
 既定のままなら設定は不要です。プロジェクトは `.env` を読み込まないため、変更する場合は `npm start` と同じシェルで設定します。
 
 ```powershell
-$env:OLLAMA_MODEL = "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest"
+$env:OLLAMA_MODEL = "elyza-jp:8b"
 $env:OLLAMA_EMBEDDING_MODEL = "bge-m3"
 npm start
 ```
@@ -46,7 +49,7 @@ npm start
 | 変数 | 意味 | 未設定のとき |
 |------|------|--------------|
 | `OLLAMA_BASE_URL` | Ollama の URL | `http://localhost:11434` |
-| `OLLAMA_MODEL` | チャットモデル | `hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest` |
+| `OLLAMA_MODEL` | チャットモデル | `elyza-jp:8b` |
 | `OLLAMA_EMBEDDING_MODEL` | 埋め込みモデル | `bge-m3` |
 | `OLLAMA_EMBEDDING_NUM_GPU` | 埋め込みに使う GPU レイヤー数 | `0`（埋め込みは CPU で計算） |
 | `CHROMA_URL` | ChromaDB の URL | `http://localhost:8000` |
@@ -62,13 +65,13 @@ npm start
 チューターが初期化されると、サーバーのログに次の行が出ます。
 
 ```text
-✅ ローカルLLM（Ollama）を初期化しました: hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest at http://localhost:11434
+✅ ローカルLLM（Ollama）を初期化しました: elyza-jp:8b at http://localhost:11434
 ```
 
 ログインして `http://localhost:3333/tutor` を開き、画面上部のステータスが次のようになれば準備完了です。
 
 ```text
-準備完了 (ローカルLLM: hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest, 知識ベース: XX件)
+準備完了 (ローカルLLM: elyza-jp:8b, 知識ベース: XX件)
 ```
 
 ## チャットモデルの生成設定

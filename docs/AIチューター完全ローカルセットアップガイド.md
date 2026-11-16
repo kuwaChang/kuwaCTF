@@ -18,6 +18,7 @@ ChromaDB がなくてもチューターは動きます。その場合は知識�
 
 ```powershell
 ollama pull hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest
+ollama create elyza-jp:8b -f config/ollama/Modelfile.elyza
 ollama pull bge-m3
 ```
 
@@ -61,7 +62,7 @@ npm start
 画面のステータスは 2 秒ごとに更新され、次の表示になれば準備完了です。
 
 ```text
-準備完了 (ローカルLLM: hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest, 知識ベース: XX件)
+準備完了 (ローカルLLM: elyza-jp:8b, 知識ベース: XX件)
 ```
 
 ### 索引の作り方

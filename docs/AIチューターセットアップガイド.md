@@ -10,7 +10,7 @@ AI チューターは、問題を解いている学習者に、答えそのも�
 - 学習者が開いている問題の情報と、その問題のヒント集
 - 直近の会話履歴
 
-生成は Ollama のローカルモデル（既定は `hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest`）で行い、外部の API は使いません。
+生成は Ollama のローカルモデル（既定は `elyza-jp:8b`）で行い、外部の API は使いません。
 
 ## 機能
 
@@ -138,7 +138,7 @@ AI チューターは、問題を解いている学習者に、答えそのも�
   "knowledgeBaseCount": 120,
   "ready": true,
   "ollamaBaseUrl": "http://localhost:11434",
-  "ollamaModel": "hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest"
+  "ollamaModel": "elyza-jp:8b"
 }
 ```
 

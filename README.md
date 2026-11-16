@@ -113,6 +113,7 @@ npm start
 
 ```powershell
 ollama pull hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest
+ollama create elyza-jp:8b -f config/ollama/Modelfile.elyza
 ollama pull bge-m3
 ```
 
@@ -123,7 +124,7 @@ pip install chromadb
 chroma run --path ./storage/chroma
 ```
 
-既定のチャットモデルは `hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest`、埋め込みモデルは `bge-m3`、Chroma の待ち受けは `http://localhost:8000` です。画面は `http://localhost:3333/tutor` です。
+既定のチャットモデルは `elyza-jp:8b`、埋め込みモデルは `bge-m3`、Chroma の待ち受けは `http://localhost:8000` です。画面は `http://localhost:3333/tutor` です。
 
 ## 環境変数（任意）
 
@@ -134,7 +135,7 @@ chroma run --path ./storage/chroma
 | `SESSION_SECRET` | セッション署名 | 起動のたびにランダム生成 |
 | `SERVER_HOST` | 問題文などに出すホスト名 | 自機の LAN IP |
 | `OLLAMA_BASE_URL` | Ollama の URL | `http://localhost:11434` |
-| `OLLAMA_MODEL` | チューターのモデル | `hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest` |
+| `OLLAMA_MODEL` | チューターのモデル | `elyza-jp:8b` |
 | `OLLAMA_EMBEDDING_MODEL` | 埋め込みモデル | `bge-m3` |
 | `CHROMA_URL` | ChromaDB の URL | `http://localhost:8000` |
 | `CODE_DOCKER_IMAGE_PYTHON` | Python 実行イメージ | `python:3.12-alpine` |

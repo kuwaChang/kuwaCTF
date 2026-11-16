@@ -1,0 +1,37 @@
+# Llama-3-ELYZA-JP-8B を、正しいチャットテンプレート（Llama 3 形式）で使うための Modelfile。
+#
+# Hugging Face から `ollama pull hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF` で入れると、
+# テンプレートが ChatML 形式（<|im_start|>）になってしまう。
+# モデルは Llama 3 形式で学習されているため、そのままだと回答が途中で止まったり、
+# 指示文が回答に写ったりしやすい。
+#
+# 登録手順（プロジェクトルートで。モデル本体は使い回すので再ダウンロードは無い）:
+#   ollama pull hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest
+#   ollama create elyza-jp:8b -f config/ollama/Modelfile.elyza
+#
+# 元に戻すとき: 環境変数 OLLAMA_MODEL に hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest を指定する
+
+FROM hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest
+
+TEMPLATE """{{- if .System }}<|start_header_id|>system<|end_header_id|>
+
+{{ .System }}<|eot_id|>
+{{- end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 }}
+{{- if eq .Role "user" }}<|start_header_id|>user<|end_header_id|>
+
+{{ .Content }}<|eot_id|>
+{{- if $last }}<|start_header_id|>assistant<|end_header_id|>
+
+{{ end }}
+{{- else if eq .Role "assistant" }}<|start_header_id|>assistant<|end_header_id|>
+
+{{ .Content }}
+{{- if not $last }}<|eot_id|>{{ end }}
+{{- end }}
+{{- end }}"""
+
+PARAMETER stop "<|start_header_id|>"
+PARAMETER stop "<|end_header_id|>"
+PARAMETER stop "<|eot_id|>"
