@@ -146,3 +146,10 @@ storage/chroma/
 
 # チューターQ&A（rebuildまでの未書き出しキュー）
 storage/tutor_qa_pending.jsonl
+# 実行時に作られるデータベース（ユーザー、ログイン記録、セッション）。PCごとに別のデータを持つ
+storage/users.db
+storage/users.db-*
+storage/sessions.sqlite
+storage/sessions.sqlite-*
+public/uploads/user_database.db
+public/uploads/user_database.db-*
