@@ -114,3 +114,16 @@ strings -a 対象ファイル
 - 端や余白に小さいコードがないか
 - LSBにASCII文字列がないか
 - 末尾にZIPなどが結合されていないか
+
+## 画像に音声を埋め込めるか
+- 埋め込める。よくある方法は3つ
+- 末尾に連結: 画像の後ろに音声ファイルをそのままつなげる（Windows: `copy /b image.jpg+audio.mp3 out.jpg`、(LinuxまたはWSL): `cat image.jpg audio.mp3 > out.jpg`）。画像としては普通に表示される。`binwalk out.jpg` で見つけ、`binwalk -e` や `foremost` で取り出す
+- steghide: JPEG や BMP の中に、音声を含む任意のファイルをパスワード付きで隠せる。`steghide extract -sf out.jpg` で取り出す
+- 逆に、音声の中に画像を隠す方法もある。音声のスペクトログラム（周波数の時間変化の図）に絵や文字を描く。Audacity や Sonic Visualiser でスペクトログラム表示にすると見える
+
+## JPEGとPNGでステガノグラフィの難易度は変わるか
+- 変わる。理由は圧縮方式の違い
+- PNG は可逆圧縮なので、ピクセルの値がそのまま保存される。最下位ビット（LSB）にデータを入れる方法が使いやすく、`zsteg image.png` で見つけやすい
+- JPEG は非可逆圧縮で、保存するたびにピクセルの値が少し変わる。ピクセルのLSBに入れたデータは壊れるので、圧縮後の係数（DCT係数）に埋め込む。ツールは steghide、outguess など
+- JPEG の steghide はパスワード付きのことが多い。`stegseek image.jpg wordlist.txt`（(LinuxまたはWSL)）で辞書から総当たりできる
+- どちらの形式でも、メタデータ（`exiftool`）や末尾の付け足し（`binwalk`）は同じように確認する

@@ -566,3 +566,26 @@ xxxxx.yyyyy.zzzzz
 ## 防御の観点
 - 試すのは配布されたCTF環境だけにする。
 - SQLiの対策は、プレースホルダ、入力検証、最小権限、エラーを画面に出さないこと。
+
+## JWTの構造の詳細
+- JWTは `header.payload.signature` の3つを `.` でつないだ文字列。それぞれ Base64URL でエンコードされている
+- header: 署名の方式などを書いたJSON。例: `{"alg":"HS256","typ":"JWT"}`
+- payload: ユーザー情報などの中身（クレーム）を書いたJSON。例: `{"sub":"1234","role":"user","exp":1700000000}`。`exp` は有効期限、`iat` は発行時刻（どちらもUNIX時間）
+- signature: header と payload を改ざんされていないことを確かめる署名。HS256 なら、`Base64URL(header).Base64URL(payload)` を秘密鍵で HMAC-SHA256 した値
+- Base64URL は、Base64 の `+` を `-`、`/` を `_` に置き換え、末尾の `=` を省いたもの。CyberChef の「JWT Decode」や、Base64 デコードで中身を読める
+- 署名の方式には、共通鍵の HS256 と、公開鍵暗号の RS256 などがある
+
+## JWTでCTFによく出る弱点
+- `alg` を `none` にして署名を空にしても、サーバーが受け付けてしまう
+- HS256 の秘密鍵が弱い。辞書で総当たりして鍵が分かれば、payload を書き換えて署名し直せる（hashcat の `-m 16500`、John the Ripper も JWT に対応）
+- RS256 のサーバーに、公開鍵を秘密鍵として使った HS256 のトークンを送ると通ってしまう（アルゴリズム混同）
+- payload の `role` を `admin` に変えても、署名を検証していなければ通る
+- payload は暗号化されていないので、パスワードなどの機密情報が入っていないかも確認する
+
+## CTFで役立つブラウザ拡張機能
+- Wappalyzer: そのサイトが使っているWebサーバー、フレームワーク、CMSなどを表示する。脆弱性を調べる手がかりになる
+- Cookie-Editor: Cookie の確認・編集・追加がしやすくなる（開発者ツールの Application タブでも同じことができる）
+- FoxyProxy: ブラウザのプロキシ設定をボタンで切り替える。Burp Suite を通すときと通さないときの切り替えに便利
+- User-Agent Switcher: User-Agent を書き換えて、スマホや特定のブラウザからのアクセスに見せる
+- 拡張を入れなくても、開発者ツール（F12）の Elements、Console、Network、Application でかなりのことができる
+- 拡張機能はページの中身を読めるので、提供元が信頼できるものだけを入れる
