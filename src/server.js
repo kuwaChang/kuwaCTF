@@ -2087,7 +2087,7 @@ io.on("connection", (socket) => {
   // socket.handshake.auth や socket.handshake.headers.cookie から認証情報を取得
 });
 
-const PORT = 3333;
+const PORT = 80;
 
 // ネットワークインターフェースのIPアドレスを取得
 function getLocalIPAddresses() {
@@ -2207,6 +2207,10 @@ try {
     if (err.code === 'EADDRINUSE') {
       console.error(`⚠️ ポート ${PORT} は既に使用されています。`);
       console.error(`💡 別のポートを使用するか、既存のプロセスを終了してください。`);
+    }
+    if (err.code === 'EACCES') {
+      console.error(`⚠️ ポート ${PORT} を開く権限がありません。`);
+      console.error(`💡 管理者として起動してください。`);
     }
   });
 } catch (error) {

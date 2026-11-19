@@ -45,8 +45,7 @@
   term.write(`WebSocket: ${wsPath}\r\n`);
   term.write("―".repeat(50) + "\r\n\r\n");
 
-  const currentHost = window.location.hostname;
-  const socketUrl = `http://${currentHost}:3333${wsPath}`;
+  const socketUrl = `${window.location.origin}${wsPath}`;
   const socket = io(socketUrl, {
     path: "/socket.io",
     transports: ["websocket", "polling"],

@@ -73,7 +73,7 @@ const mainDirectives = {
     "ws:",
     "wss:",
     "http:",
-    "https:", // LAN内の演習サーバー・SAD(3333)・動的ポート
+    "https:", // LAN内の演習サーバー・SAD・動的ポート
   ],
   workerSrc: ["'self'", "blob:"],
   upgradeInsecureRequests: null, // LAN内HTTP運用のため無効

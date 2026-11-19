@@ -472,7 +472,7 @@
       ],
       "point": 50,
       "files": [],
-      "url": "http://localhost:3333/html/sql_index.html"
+      "url": "http://localhost/html/sql_index.html"
     },
     "web5": {
       "answer": "FLAG{hidden_flag_discovered}",
@@ -487,7 +487,7 @@
       ],
       "point": 50,
       "files": [],
-      "url": "http://localhost:3333/html/advertisement.html"
+      "url": "http://localhost/html/advertisement.html"
     },
     "web6": {
       "answer": "FLAG{check_http_headers}",
@@ -502,7 +502,7 @@
       ],
       "point": 30,
       "files": [],
-      "url": "http://localhost:3333/web/header-flag"
+      "url": "http://localhost/web/header-flag"
     },
     "web7": {
       "answer": "FLAG{modify_request_headers}",
@@ -517,7 +517,7 @@
       ],
       "point": 40,
       "files": [],
-      "url": "http://localhost:3333/web/request-header-flag"
+      "url": "http://localhost/web/request-header-flag"
     },
     "web8": {
       "answer": "FLAG{check_html_comments}",
@@ -532,7 +532,7 @@
       ],
       "point": 25,
       "files": [],
-      "url": "http://localhost:3333/web/comment-flag"
+      "url": "http://localhost/web/comment-flag"
     },
     "web9": {
       "answer": "FLAG{check_etag_header}",
@@ -547,7 +547,7 @@
       ],
       "point": 35,
       "files": [],
-      "url": "http://localhost:3333/web/etag-flag"
+      "url": "http://localhost/web/etag-flag"
     },
     "web10": {
       "answer": "FLAG{xss_attack_success}",
@@ -557,8 +557,8 @@
       "hint": [],
       "point": 50,
       "files": [],
-      "url": "http://localhost:3333/html/xss_index.html",
-      "explanation": "http://localhost:3333/xss_explanation"
+      "url": "http://localhost/html/xss_index.html",
+      "explanation": "http://localhost/xss_explanation"
     },
     "web11": {
       "answer": "FLAG{test_attack_XSS}",
@@ -571,8 +571,8 @@
       ],
       "point": 50,
       "files": [],
-      "url": "http://localhost:3333/shop",
-      "explanation": "http://localhost:3333/xss_explanation"
+      "url": "http://localhost/shop",
+      "explanation": "http://localhost/xss_explanation"
     },
     "web12": {
       "answer": "FLAG{これがパストラバーサル}",
@@ -582,8 +582,8 @@
       "hint": [],
       "point": 50,
       "files": [],
-      "url": "http://localhost:3333/html/path-traversal_index.html",
-      "explanation": "http://localhost:3333/path-traversal_explanation"
+      "url": "http://localhost/html/path-traversal_index.html",
+      "explanation": "http://localhost/path-traversal_explanation"
     }
   },
   "Forensics": {
