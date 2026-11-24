@@ -35,11 +35,12 @@ function isInlineScriptPath(req) {
   return INLINE_SCRIPT_PATHS.has(req.path.split("?")[0].toLowerCase());
 }
 
-// メインアプリ用（CDN・Monaco・Socket.io・Leaflet等）
+// メインアプリ用（Monaco・Socket.io・Leaflet・地図タイル）
+// JS/CSS は public/lib に同梱。地図タイルは外部ホスト。
 const mainDirectives = {
   defaultSrc: ["'self'"],
   baseUri: ["'self'"],
-  fontSrc: ["'self'", "data:", "https://cdn.jsdelivr.net"],
+  fontSrc: ["'self'", "data:"],
   formAction: ["'self'"],
   frameAncestors: ["'self'"],
   imgSrc: [
@@ -56,18 +57,10 @@ const mainDirectives = {
   objectSrc: ["'none'"],
   scriptSrc: [
     "'self'",
-    "https://cdn.socket.io",
-    "https://cdn.jsdelivr.net",
-    "https://unpkg.com",
     "'unsafe-eval'", // Monaco Editor
   ],
   scriptSrcAttr: ["'unsafe-inline'"], // admin/tutor の onclick 等
-  styleSrc: [
-    "'self'",
-    "'unsafe-inline'",
-    "https://cdn.jsdelivr.net",
-    "https://unpkg.com",
-  ],
+  styleSrc: ["'self'", "'unsafe-inline'"],
   connectSrc: [
     "'self'",
     "ws:",

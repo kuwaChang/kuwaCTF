@@ -369,9 +369,8 @@ function updateToleranceCircle(lat, lng) {
 
 // 地図を初期化
 function initMapForCoordinates() {
-  const mapContainer = document.getElementById("map-container");
   const mapDiv = document.getElementById("map");
-  
+
   // Leaflet + キー不要のタイル（Esri / 国土地理院）
   if (typeof L !== 'undefined') {
     map = L.map(mapDiv).setView([35.6812, 139.7671], 10);
@@ -457,9 +456,7 @@ function loadLeafletLibrary() {
     // Leaflet CSS
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
-    link.crossOrigin = '';
+    link.href = '/lib/leaflet/leaflet.css';
     document.head.appendChild(link);
     
     const globalDefine = window.define;
@@ -477,9 +474,7 @@ function loadLeafletLibrary() {
 
     // Leaflet JS
     const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
-    script.crossOrigin = '';
+    script.src = '/lib/leaflet/leaflet.js';
     script.onload = () => {
       restoreAmd();
       resolve();
