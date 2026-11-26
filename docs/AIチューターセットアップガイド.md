@@ -43,7 +43,6 @@ AI チューターは、問題を解いている学習者に、答えそのも�
 | `osint.md` | OSINT | 検索 |
 | `steganography.md` | ステガノグラフィ | 検索 |
 | `reversing_pwn.md` | リバースエンジニアリング・Pwn | 検索 |
-| `sad_server.md` | Sad Server シナリオ（Linux 端末課題） | 検索 |
 | `tools_and_commands.md` | CTF ツールとコマンド | 検索 |
 | `learning_sites_and_terms.md` | 学習サイトと用語 | 検索 |
 | `meta.md` | CTF の進め方 | 検索 |

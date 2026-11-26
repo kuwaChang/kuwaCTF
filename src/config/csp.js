@@ -35,7 +35,7 @@ function isInlineScriptPath(req) {
   return INLINE_SCRIPT_PATHS.has(req.path.split("?")[0].toLowerCase());
 }
 
-// メインアプリ用（Monaco・Socket.io・Leaflet・地図タイル）
+// メインアプリ用（Leaflet・地図タイル）
 // JS/CSS は public/lib に同梱。地図タイルは外部ホスト。
 const mainDirectives = {
   defaultSrc: ["'self'"],
@@ -55,10 +55,7 @@ const mainDirectives = {
     "https://cyberjapandata.gsi.go.jp",
   ],
   objectSrc: ["'none'"],
-  scriptSrc: [
-    "'self'",
-    "'unsafe-eval'", // Monaco Editor
-  ],
+  scriptSrc: ["'self'"],
   scriptSrcAttr: ["'unsafe-inline'"], // admin/tutor の onclick 等
   styleSrc: ["'self'", "'unsafe-inline'"],
   connectSrc: [
@@ -66,7 +63,7 @@ const mainDirectives = {
     "ws:",
     "wss:",
     "http:",
-    "https:", // LAN内の演習サーバー・SAD・動的ポート
+    "https:", // LAN内の演習サーバー・動的ポート
   ],
   workerSrc: ["'self'", "blob:"],
   upgradeInsecureRequests: null, // LAN内HTTP運用のため無効

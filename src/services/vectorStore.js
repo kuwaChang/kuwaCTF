@@ -16,7 +16,7 @@ const PROBLEM_HINT_FILE_RE = /^(easy|medium|hard)\d+\.md$/i;
  * 知識ベースの中身や分割方法を変えたら上げる。
  * コレクション名が変わるので、次回起動時に自動で作り直される。
  */
-const KNOWLEDGE_INDEX_VERSION = 4;
+const KNOWLEDGE_INDEX_VERSION = 5;
 
 /**
  * 見出し境界で区切り、1チャンクが次の見出しに入り込まないようにする。

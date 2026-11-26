@@ -138,9 +138,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# コード実行用の一時ディレクトリ
-temp/
-
 # ChromaDBデータベース
 storage/chroma/
 

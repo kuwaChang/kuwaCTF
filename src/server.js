@@ -10,13 +10,11 @@ const cors = require("cors");
 const { cspMiddleware } = require("./config/csp");
 const fs = require("fs");
 const os = require("os");
-const { Server } = require("socket.io");
 const paths = require("./config/paths");
 const { filterPublishedQuizData } = require("./utils/quizVisibility");
-const { router: sadRouter, setSocketIO } = require("./server-sad");
 const crypto = require("crypto");
 const multer = require("multer");
-const { exec, spawn, spawnSync } = require("child_process");
+const { exec, spawn } = require("child_process");
 const { promisify } = require("util");
 const execAsync = promisify(exec);
 
@@ -52,9 +50,6 @@ function rateLimit(req, res, next) {
   // レート制限を除外するパス（APIエンドポイントや静的ファイルなど）
   const excludedPaths = [
     '/api/quizData',
-    '/sad/start-sad',
-    '/sad/stop-sad',
-    '/socket.io',
     '/favicon.ico',
     '/js/',
     '/css/',
@@ -182,15 +177,6 @@ const sqlDb = new sqlite3.Database(sqlDbPath);
 const http = require("http");
 const net = require("net");
 const server = http.createServer(app);
-const io = new Server(server, {
-  path: "/socket.io",
-  transports: ["websocket", "polling"],
-  cors: {
-    origin: true, // LAN内のすべてのオリジンを許可
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
 
 // ============================================
 // 個別ショッピングサーバー管理機能
@@ -327,14 +313,6 @@ setInterval(() => {
     }
   }
 }, 5 * 60 * 1000); // 5分ごとにチェック
-
-// Socket.ioをSadサーバー機能に紐づけ
-setSocketIO(io);
-
-// デバッグ用：接続確認
-io.on("connection", (socket) => {
-  console.log("🟢 WebSocket接続:", socket.id);
-});
 
 // LAN内のみアクセス可能にするミドルウェア
 const { isAllowedIp, isAllowedHostname, describeAllowedNetworks } = require("./utils/allowedNetworks");
@@ -559,11 +537,6 @@ app.get("/game-battle", (req, res) => {
 // 広告ページ（flag-hidden 演習用）
 app.get("/advertisement", (req, res) => {
   res.sendFile(path.join(paths.VIEWS, "pages", "advertisement.html"));
-});
-
-// Sad Server 用の別ウィンドウターミナルページ
-app.get("/sad-terminal", (req, res) => {
-  res.sendFile(path.join(paths.VIEWS, "pages", "sad-terminal.html"));
 });
 
 // ============================================
@@ -1163,7 +1136,6 @@ app.get("/path-traversal/download", (req, res) => {
     'package-lock.json',
     '.env',
     'sessions.sqlite',
-    'server-sad.js',
     'src',
     'node_modules',
     'config',
@@ -1657,292 +1629,6 @@ app.get("/api/user-icon/:userid", (req, res) => {
   });
 });
 
-// --- コード実行: Docker サンドボックス（ホスト上の任意コード実行を防ぐ） ---
-let dockerDaemonOk = null;
-function isDockerDaemonAvailable() {
-  if (dockerDaemonOk !== null) return dockerDaemonOk;
-  try {
-    const r = spawnSync("docker", ["info"], {
-      encoding: "utf8",
-      timeout: 8000,
-      windowsHide: true,
-      stdio: ["ignore", "ignore", "pipe"],
-    });
-    dockerDaemonOk = r.status === 0;
-  } catch {
-    dockerDaemonOk = false;
-  }
-  return dockerDaemonOk;
-}
-
-function dockerVolumePathForMount(absDir) {
-  return path.resolve(absDir).replace(/\\/g, "/");
-}
-
-/** @returns {{ spawnCmd: string, spawnArgs: string[], useShell: boolean, cwd?: string } | null} */
-function buildCodeExecutionSpawn(tempDir, language) {
-  //1:Docker,0:ホスト実行
-  const insecure = process.env.CODE_EXEC_INSECURE_HOST === "0";
-
-  let filename;
-  switch (language) {
-    case "python":
-      filename = "main.py";
-      break;
-    case "c":
-      filename = "main.c";
-      break;
-    case "cpp":
-      filename = "main.cpp";
-      break;
-    case "java":
-      filename = "Main.java";
-      break;
-    default:
-      return null;
-  }
-
-  if (!insecure && isDockerDaemonAvailable()) {
-    const mount = dockerVolumePathForMount(tempDir);
-    const common = [
-      "run",
-      "--rm",
-      "--network",
-      "none",
-      "--memory",
-      "256m",
-      "--cpus",
-      "0.5",
-      "--pids-limit",
-      "128",
-      "--security-opt",
-      "no-new-privileges",
-      "-v",
-      `${mount}:/work`,
-      "-w",
-      "/work",
-    ];
-    let image;
-    let inner;
-    switch (language) {
-      case "python":
-        image = process.env.CODE_DOCKER_IMAGE_PYTHON || "python:3.12-alpine";
-        inner = "python3 main.py";
-        break;
-      case "c":
-        image = process.env.CODE_DOCKER_IMAGE_C || "gcc:12-bookworm";
-        inner = "gcc main.c -o main && ./main";
-        break;
-      case "cpp":
-        image = process.env.CODE_DOCKER_IMAGE_CPP || "gcc:12-bookworm";
-        inner = "g++ main.cpp -o main && ./main";
-        break;
-      case "java":
-        image = process.env.CODE_DOCKER_IMAGE_JAVA || "eclipse-temurin:17-jdk";
-        inner = "javac Main.java && java Main";
-        break;
-      default:
-        return null;
-    }
-    return {
-      spawnCmd: "docker",
-      spawnArgs: [...common, image, "sh", "-c", inner],
-      useShell: false,
-    };
-  }
-
-  if (!insecure) {
-    return null;
-  }
-
-  let command;
-  switch (language) {
-    case "python":
-      command = `python "${path.join(tempDir, filename)}"`;
-      break;
-    case "c": {
-      const cExe = path.join(tempDir, "main.exe");
-      command = `gcc "${path.join(tempDir, filename)}" -o "${cExe}" && "${cExe}"`;
-      break;
-    }
-    case "cpp": {
-      const cppExe = path.join(tempDir, "main.exe");
-      command = `g++ "${path.join(tempDir, filename)}" -o "${cppExe}" && "${cppExe}"`;
-      break;
-    }
-    case "java":
-      command = `cd "${tempDir}" && javac "${filename}" && java Main`;
-      break;
-    default:
-      return null;
-  }
-  return { spawnCmd: command, spawnArgs: [], useShell: true, cwd: tempDir };
-}
-
-// コード実行API
-app.post("/api/execute-code", (req, res) => {
-  // セキュリティ: 認証チェック
-  if (!req.session.userid) {
-    return res.status(401).json({ success: false, message: "ログインが必要です" });
-  }
-
-  const { code, language } = req.body;
-
-  if (!code || !language) {
-    return res.status(400).json({ success: false, message: "コードと言語を指定してください" });
-  }
-
-  // サポートされている言語のチェック
-  const supportedLanguages = ['python', 'c', 'cpp', 'java'];
-  if (!supportedLanguages.includes(language)) {
-    return res.status(400).json({ success: false, message: "サポートされていない言語です" });
-  }
-
-  // コード長の制限（10KB）
-  if (code.length > 10000) {
-    return res.status(400).json({ success: false, message: "コードが長すぎます（最大10KB）" });
-  }
-
-  // 一時ディレクトリの作成
-  const tempDir = path.join(paths.TEMP, `code_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`);
-  if (!fs.existsSync(paths.TEMP)) {
-    fs.mkdirSync(paths.TEMP, { recursive: true });
-  }
-  fs.mkdirSync(tempDir, { recursive: true });
-
-  // 実行時間制限（100秒）
-  const TIMEOUT = 100000;
-
-  let filename;
-  switch (language) {
-    case 'python':
-      filename = 'main.py';
-      break;
-    case 'c':
-      filename = 'main.c';
-      break;
-    case 'cpp':
-      filename = 'main.cpp';
-      break;
-    case 'java':
-      filename = 'Main.java';
-      break;
-    default:
-      cleanup(tempDir);
-      return res.status(400).json({ success: false, message: "サポートされていない言語です" });
-  }
-
-  // コードをファイルに書き込み
-  const filePath = path.join(tempDir, filename);
-  fs.writeFileSync(filePath, code, 'utf8');
-
-  const spec = buildCodeExecutionSpawn(tempDir, language);
-  if (!spec) {
-    cleanup(tempDir);
-    return res.status(503).json({
-      success: false,
-      message:
-        "サーバー側のコード実行はサンドボックス（Docker）が利用できないため無効です。Docker を起動するか、開発時のみ CODE_EXEC_INSECURE_HOST=1 でホスト実行を有効にできます（非推奨）。",
-    });
-  }
-
-  // コード実行
-  const startTime = Date.now();
-  const childProcess = spec.useShell
-    ? spawn(spec.spawnCmd, {
-        shell: true,
-        cwd: spec.cwd,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        timeout: TIMEOUT,
-      })
-    : spawn(spec.spawnCmd, spec.spawnArgs, {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        timeout: TIMEOUT,
-      });
-
-  let stdout = '';
-  let stderr = '';
-  let isTimedOut = false;
-
-  childProcess.stdout.on('data', (data) => {
-    stdout += data.toString();
-  });
-
-  childProcess.stderr.on('data', (data) => {
-    stderr += data.toString();
-  });
-
-  // タイムアウト処理
-  const timeoutId = setTimeout(() => {
-    isTimedOut = true;
-    childProcess.kill();
-  }, TIMEOUT);
-
-  childProcess.on('close', (exitCode) => {
-    clearTimeout(timeoutId);
-    
-    // 一時ファイルの削除
-    cleanup(tempDir);
-
-    const executionTime = Date.now() - startTime;
-
-    if (isTimedOut) {
-      return res.json({
-        success: false,
-        output: '',
-        error: `実行時間が制限（${TIMEOUT / 1000}秒）を超えました`
-      });
-    }
-
-    if (exitCode !== 0 || stderr) {
-      return res.json({
-        success: false,
-        output: stdout,
-        error: stderr || `プロセスが終了コード ${exitCode} で終了しました`
-      });
-    }
-
-    res.json({
-      success: true,
-      output: stdout || '（出力なし）',
-      executionTime: executionTime
-    });
-  });
-
-  childProcess.on('error', (error) => {
-    clearTimeout(timeoutId);
-    cleanup(tempDir);
-    res.status(500).json({
-      success: false,
-      output: '',
-      error: `実行エラー: ${error.message}`
-    });
-  });
-});
-
-// 一時ファイルのクリーンアップ関数
-function cleanup(dir) {
-  try {
-    if (fs.existsSync(dir)) {
-      fs.readdirSync(dir).forEach(file => {
-        const filePath = path.join(dir, file);
-        try {
-          fs.unlinkSync(filePath);
-        } catch (err) {
-          // ファイル削除エラーは無視
-        }
-      });
-      try {
-        fs.rmdirSync(dir);
-      } catch (err) {
-        // ディレクトリ削除エラーは無視
-      }
-    }
-  } catch (err) {
-    // クリーンアップエラーは無視
-  }
-}
-
 // 各ルート登録
 //console.log("📦 ルートモジュールを読み込み中...");
 try {
@@ -1972,7 +1658,6 @@ try {
   app.use("/achievements", achievementRoutes);
   app.use("/tutor", tutorRoutes);
   app.use("/decorations", decorationRoutes);
-  app.use("/sad", sadRouter);
   //console.log("✅ すべてのルートを登録しました");
 } catch (error) {
   console.error("❌ ルートモジュール読み込みエラー:", error);
@@ -2070,21 +1755,6 @@ app.post("/api/shop/stop", (req, res) => {
     success: true,
     message: 'ショッピングサーバーを停止しました'
   });
-});
-
-// ✅ Socket.ioが有効化されることを確認
-// セキュリティ: Socket.ioの認証ミドルウェア追加
-io.use((socket, next) => {
-  // クッキーからセッションIDを取得して認証チェック
-  // 注意: Socket.ioの認証は複雑なので、必要に応じて拡張が必要
-  next();
-});
-
-io.on("connection", (socket) => {
-  console.log("🟢 WebSocket接続成功:", socket.id);
-  
-  // セキュリティ: 未認証ユーザーの接続を拒否する場合
-  // socket.handshake.auth や socket.handshake.headers.cookie から認証情報を取得
 });
 
 const PORT = 80;

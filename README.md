@@ -1,6 +1,6 @@
 # kuwaCTF
 
-LAN 内で使う、CTF 形式のセキュリティ学習サーバーです。Node.js / Express 上で、問題演習、スコアとランキング、実績、端末演習、意図的に脆弱なラボ、ローカル LLM の AI チューターを提供します。
+LAN 内で使う、CTF 形式のセキュリティ学習サーバーです。Node.js / Express 上で、問題演習、スコアとランキング、実績、意図的に脆弱なラボ、ローカル LLM の AI チューターを提供します。
 
 アクセスはプライベート IP（`localhost`、`10.0.0.0/8`、`172.16.0.0/12`、`192.168.0.0/16`）からのみ許可します。ラボには学習用の脆弱性が含まれます。公開インターネットや本番環境では使わないでください。
 
@@ -9,8 +9,6 @@ LAN 内で使う、CTF 形式のセキュリティ学習サーバーです。Nod
 - ログイン・新規登録、マイページ、ユーザーアイコン
 - ストーリー形式の問題（Easy / Medium / Hard）と、Web・フォレンジック・暗号・OSINT のカテゴリ問題
 - スコア、ランキング、実績、デコレーション
-- Sad Server（Docker 上の端末演習）
-- Python / C / C++ / Java のコード実行（Docker サンドボックス）
 - XSS ショップ、攻撃者ラボ、SQL インジェクション、パストラバーサルの演習
 - 管理者画面
 - 意見箱（改善点・不具合の送信と、管理者による対応）
@@ -26,7 +24,6 @@ LAN 内で使う、CTF 形式のセキュリティ学習サーバーです。Nod
 | `/tutor` | AI チューター |
 | `/ranking` | ランキング |
 | `/game` | ゲーム |
-| `/sad-terminal` | Sad Server の端末 |
 | `/admin` | 管理者画面（`admin` ロール） |
 | `/feedback` | 意見箱（改善点・不具合） |
 
@@ -34,7 +31,6 @@ LAN 内で使う、CTF 形式のセキュリティ学習サーバーです。Nod
 
 - Node.js 20 LTS（20.12 以降。`.env` の読み込みに使う）
 - npm
-- Docker Desktop（Sad Server とコード実行を使う場合）
 - Git
 
 `bcrypt` と `sqlite3` はネイティブモジュールです。`npm install` でビルドに失敗する場合は、Build Tools for Visual Studio の「C++ によるデスクトップ開発」を入れてからやり直してください。
@@ -52,15 +48,6 @@ npm install
 cd ..\..
 ```
 
-Sad Server とコード実行を使う場合は、イメージを取得してから Docker Desktop を起動した状態にします。
-
-```powershell
-docker pull ubuntu
-docker pull python:3.12-alpine
-docker pull gcc:12-bookworm
-docker pull eclipse-temurin:17-jdk
-```
-
 サーバーを起動します。
 
 ```powershell
@@ -71,13 +58,11 @@ npm start
 
 | 役割 | 起動 | ポート |
 |------|------|--------|
-| メインサーバー（ログイン、問題、ランキング、Socket.IO） | `npm start` | 3333 |
+| メインサーバー（ログイン、問題、ランキング） | `npm start` | 3333 |
 | 攻撃者ラボ（Cookie 受け取り） | メイン起動時に自動起動 | 3001 |
 | XSS ショップ | 問題利用時にセッションごとに起動 | 3000 から空きポート |
-| Sad Server | 問題利用時に Docker コンテナを起動 | コンテナ内 |
-| コード実行 | ログイン後の API。Docker サンドボックス | なし |
 
-初回起動時に `storage/users.db`、`storage/sessions.sqlite`、`public/icons/`、`public/uploads/user_database.db`、`temp/` が作られます。手で作る必要はありません。
+初回起動時に `storage/users.db`、`storage/sessions.sqlite`、`public/icons/`、`public/uploads/user_database.db` が作られます。手で作る必要はありません。
 
 ## 最初のユーザー
 
@@ -95,7 +80,7 @@ npm start
 
 ## 問題
 
-問題データは `config/quizData.json`、Sad Server のシナリオは `config/scenarios.json`、実績は `config/achievements.json` です。配布ファイルは `public/uploads/` にあり、URL は `/files/...` です。
+問題データは `config/quizData.json`、実績は `config/achievements.json` です。配布ファイルは `public/uploads/` にあり、URL は `/files/...` です。
 
 | 区分 | 内容 |
 |------|------|
@@ -149,12 +134,6 @@ PowerShell の `$env:` や `setx` で設定した値があれば、`.env` より
 | `OLLAMA_EMBEDDING_MODEL` | 埋め込みモデル | `bge-m3` |
 | `OLLAMA_THINK` | 思考モード（Qwen3 など）。`1` でオン。オンだと遅くなり、ストリーミング中に考えている途中の文も画面に出るため、通常はオフのまま。思考モードの無いモデルでオンにするとエラーになる | オフ |
 | `CHROMA_URL` | ChromaDB の URL | `http://localhost:8000` |
-| `CODE_DOCKER_IMAGE_PYTHON` | Python 実行イメージ | `python:3.12-alpine` |
-| `CODE_DOCKER_IMAGE_C` | C 実行イメージ | `gcc:12-bookworm` |
-| `CODE_DOCKER_IMAGE_CPP` | C++ 実行イメージ | `gcc:12-bookworm` |
-| `CODE_DOCKER_IMAGE_JAVA` | Java 実行イメージ | `eclipse-temurin:17-jdk` |
-
-`CODE_EXEC_INSECURE_HOST=0` は、学習者のコードをサーバー機の OS 上で実行します。Docker が使えない開発時以外は設定しないでください。
 
 ## ディレクトリ
 
@@ -172,7 +151,6 @@ PowerShell の `$env:` や `setx` で設定した値があれば、`.env` より
 | `labs/xss/` | XSS 演習用サブサーバー |
 | `scripts/` | 運用スクリプト |
 | `docs/` | ドキュメント |
-| `temp/` | コード実行の一時ディレクトリ |
 
 ## ドキュメント
 

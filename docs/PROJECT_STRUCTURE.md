@@ -8,7 +8,7 @@ Node.js / Express でよく使われるディレクトリ名に整理した構�
 |------|------|
 | `src/` | アプリケーション本体（サーバー・ルート・サービス） |
 | `src/config/paths.js` | プロジェクト内のパス定数（変更時はここを更新） |
-| `config/` | JSON 設定（クイズ・実績・シナリオ） |
+| `config/` | JSON 設定（クイズ・実績） |
 | `content/knowledge/` | AIチューター用ナレッジ（Markdown・草案含む統合済み） |
 | `storage/` | SQLite・セッション・Chroma・Q&Aキュー |
 | `views/pages/` | 公開HTML（URLは従来どおり `/html/...`） |
@@ -19,7 +19,6 @@ Node.js / Express でよく使われるディレクトリ名に整理した構�
 | `labs/xss/` | XSS演習用サブサーバー |
 | `scripts/` | 運用スクリプト |
 | `docs/` | ドキュメント |
-| `temp/` | コード実行の一時ディレクトリ |
 
 ## 旧パスとの対応
 
